@@ -1,0 +1,152 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+export async function GET() {
+  try {
+    const staff = await prisma.staff.findMany({
+      orderBy: {
+        name: 'asc',
+      },
+      include: {
+        appointments: {
+          where: {
+            status: 'completed',
+          },
+          include: {
+            service: true,
+          },
+        },
+      },
+    });
+
+    // Performans verileri ekle
+    const staffWithPerformance = staff.map(member => {
+      const totalAppointments = member.appointments.length;
+      const revenue = member.appointments.reduce((sum, apt) => sum + apt.service.price, 0);
+      const avgRating = totalAppointments > 0 ? Math.min(5, 3 + totalAppointments / 10) : 0;
+
+      return {
+        id: member.id,
+        name: member.name,
+        email: member.email,
+        phone: member.phone,
+        specialty: member.specialty,
+        categories: member.categories,
+        avatar: member.avatar,
+        isActive: member.isActive,
+        totalAppointments,
+        revenue,
+        avgRating: Math.round(avgRating * 10) / 10,
+      };
+    });
+
+    return NextResponse.json(staffWithPerformance);
+  } catch (error) {
+    console.error('Personel getirme hatası:', error);
+    return NextResponse.json(
+      { error: 'Personel getirilemedi' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { name, email, phone, specialty, categories, avatar, isActive } = body;
+
+    if (!name || !email || !phone || !specialty || !categories) {
+      return NextResponse.json(
+        { error: 'Ad, e-posta, telefon, uzmanlık ve kategoriler zorunludur' },
+        { status: 400 }
+      );
+    }
+
+    // E-posta kontrolü
+    const existing = await prisma.staff.findUnique({ where: { email } });
+    if (existing) {
+      return NextResponse.json(
+        { error: 'Bu e-posta adresi zaten kullanılıyor' },
+        { status: 400 }
+      );
+    }
+
+    const staff = await prisma.staff.create({
+      data: {
+        name,
+        email,
+        phone,
+        specialty,
+        categories: typeof categories === 'object' ? JSON.stringify(categories) : categories,
+        avatar: avatar || null,
+        isActive: isActive !== undefined ? isActive : true,
+      },
+    });
+
+    return NextResponse.json(staff, { status: 201 });
+  } catch (error) {
+    console.error('Personel oluşturma hatası:', error);
+    return NextResponse.json(
+      { error: 'Personel oluşturulamadı' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, name, email, phone, specialty, categories, avatar, isActive } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Personel ID gerekli' },
+        { status: 400 }
+      );
+    }
+
+    const staff = await prisma.staff.update({
+      where: { id },
+      data: {
+        ...(name && { name }),
+        ...(email && { email }),
+        ...(phone && { phone }),
+        ...(specialty && { specialty }),
+        ...(categories && { categories: typeof categories === 'object' ? JSON.stringify(categories) : categories }),
+        ...(avatar !== undefined && { avatar }),
+        ...(isActive !== undefined && { isActive }),
+      },
+    });
+
+    return NextResponse.json(staff);
+  } catch (error) {
+    console.error('Personel güncelleme hatası:', error);
+    return NextResponse.json(
+      { error: 'Personel güncellenemedi' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Personel ID gerekli' },
+        { status: 400 }
+      );
+    }
+
+    await prisma.staff.delete({ where: { id } });
+    return NextResponse.json({ message: 'Personel silindi' });
+  } catch (error) {
+    console.error('Personel silme hatası:', error);
+    return NextResponse.json(
+      { error: 'Personel silinemedi' },
+      { status: 500 }
+    );
+  }
+}
