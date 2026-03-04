@@ -1,0 +1,31 @@
+{
+  "name": "Demir Güzellik Salonu",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
+  "postCreateCommand": "npm install",
+  "postStartCommand": "npx prisma generate && npx prisma migrate dev",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Next.js App",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "Prisma.prisma",
+        "bradlc.vscode-tailwindcss",
+        "GitHub.copilot"
+      ],
+      "settings": {
+        "css.validate": false,
+        "css.lint.unknownAtRules": "ignore"
+      }
+    }
+  },
+  "remoteEnv": {
+    "DATABASE_URL": "file:/workspaces/${localWorkspaceFolderBasename}/prisma/dev.db"
+  }
+}
