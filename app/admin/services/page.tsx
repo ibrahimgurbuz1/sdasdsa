@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAdminAuth } from '../useAdminAuth';
 import { FaPlus, FaEdit, FaTrash, FaCut, FaClock, FaMoneyBillWave, FaCheckCircle } from 'react-icons/fa';
 
 type Service = {
@@ -16,6 +17,7 @@ type Service = {
 const CATEGORIES = ['Saç Bakımı', 'Sakal & Bıyık', 'Cilt Bakımı', 'Masaj', 'Tırnak Bakımı', 'Ağda & Epilasyon', 'Makyaj'];
 
 export default function Services() {
+  useAdminAuth();
   const [showNewService, setShowNewService] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [services, setServices] = useState<Service[]>([]);

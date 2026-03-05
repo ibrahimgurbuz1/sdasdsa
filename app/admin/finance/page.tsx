@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAdminAuth } from '../useAdminAuth';
 import { FaMoneyBillWave, FaArrowUp, FaChartLine, FaSync, FaReceipt } from 'react-icons/fa';
 
 type Transaction = {
@@ -27,6 +28,7 @@ type FinanceData = {
 };
 
 export default function AdminFinance() {
+  useAdminAuth();
   const [data, setData] = useState<FinanceData | null>(null);
   const [loading, setLoading] = useState(true);
 

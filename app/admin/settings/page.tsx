@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAdminAuth } from '../useAdminAuth';
 import { FaSave, FaBell, FaClock, FaMoneyBillWave, FaPalette, FaGlobe, FaInstagram, FaFacebook, FaWhatsapp, FaSearch, FaSpinner, FaCheck } from 'react-icons/fa';
 
 interface Settings {
@@ -56,6 +57,7 @@ interface Settings {
 }
 
 export default function Settings() {
+  useAdminAuth();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

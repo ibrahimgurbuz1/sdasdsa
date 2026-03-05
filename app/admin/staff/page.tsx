@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAdminAuth } from '../useAdminAuth';
 import { FaUserPlus, FaStar, FaCalendarCheck, FaMoneyBillWave, FaPhone, FaEnvelope, FaSync, FaTimes, FaTrash, FaEdit } from 'react-icons/fa';
 
 type StaffMember = {
@@ -28,6 +29,7 @@ const CATEGORIES = [
 ];
 
 export default function Staff() {
+  useAdminAuth();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);

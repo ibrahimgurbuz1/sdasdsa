@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAdminAuth } from '../useAdminAuth';
 import { FaCalendarCheck, FaUsers, FaMoneyBillWave, FaChartLine, FaSpinner } from 'react-icons/fa';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 

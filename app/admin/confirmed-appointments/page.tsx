@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAdminAuth } from '../useAdminAuth';
 import { FaSearch, FaFilter, FaClock, FaUser, FaCheckCircle, FaTimes, FaSpinner } from 'react-icons/fa';
 
 type Appointment = {
@@ -17,6 +18,7 @@ type Appointment = {
 };
 
 export default function ConfirmedAppointments() {
+  useAdminAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);

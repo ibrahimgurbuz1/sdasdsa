@@ -15,6 +15,7 @@ export default function AdminLayout({
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [adminUser, setAdminUser] = useState<any>(null);
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     // Login sayfasında değilsek auth kontrolü yap
@@ -22,6 +23,7 @@ export default function AdminLayout({
       const isAuth = localStorage.getItem('adminAuth');
       if (!isAuth) {
         router.push('/admin/login');
+        return;
       } else {
         const user = localStorage.getItem('adminUser');
         if (user) {
@@ -29,6 +31,7 @@ export default function AdminLayout({
         }
       }
     }
+    setIsChecking(false);
   }, [pathname, router]);
 
   const handleLogout = () => {
@@ -40,6 +43,18 @@ export default function AdminLayout({
   // Login sayfasında header gösterme
   if (pathname === '/admin/login') {
     return <>{children}</>;
+  }
+
+  // Auth check loading
+  if (isChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C9A05C] mx-auto"></div>
+          <p className="mt-4 text-gray-600">Yükleniyor...</p>
+        </div>
+      </div>
+    );
   }
 
   const navigation = [

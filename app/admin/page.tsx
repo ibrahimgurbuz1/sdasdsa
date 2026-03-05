@@ -2,8 +2,20 @@
 
 import Link from 'next/link';
 import { FaCalendarAlt, FaCut, FaUsers, FaChartLine, FaCog, FaUserTie } from 'react-icons/fa';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function AdminWelcome() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check authentication
+    const isAuth = localStorage.getItem('adminAuth');
+    if (!isAuth) {
+      router.push('/admin/login');
+    }
+  }, [router]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#C5A059]/5 via-[#C5A059]/10 to-[#C5A059]/5">
       {/* Hero Section */}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAdminAuth } from '../useAdminAuth';
 import { FaUserPlus, FaSearch, FaPhone, FaEnvelope, FaCalendarAlt, FaStar, FaChartLine, FaSync } from 'react-icons/fa';
 
 type Customer = {
@@ -23,6 +24,7 @@ type Stats = {
 };
 
 export default function Customers() {
+  useAdminAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [stats, setStats] = useState<Stats>({ totalCustomers: 0, avgVisits: 0, totalRevenue: 0, avgRating: '0.0' });

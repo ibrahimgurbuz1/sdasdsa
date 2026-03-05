@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAdminAuth } from '../useAdminAuth';
 import { FaCalendarPlus, FaSearch, FaFilter, FaClock, FaUser, FaCheck, FaTimes, FaEllipsisV, FaSpinner } from 'react-icons/fa';
 
 type Appointment = {
@@ -17,6 +18,7 @@ type Appointment = {
 };
 
 export default function Appointments() {
+  useAdminAuth(); // Protected route
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showNewAppointment, setShowNewAppointment] = useState(false);

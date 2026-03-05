@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAdminAuth } from '../useAdminAuth';
 import { FaPlus, FaEdit, FaTrash, FaPercent, FaCalendar, FaSync, FaTag } from 'react-icons/fa';
 
 type Campaign = {
@@ -15,6 +16,7 @@ type Campaign = {
 };
 
 export default function Campaigns() {
+  useAdminAuth();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewCampaign, setShowNewCampaign] = useState(false);

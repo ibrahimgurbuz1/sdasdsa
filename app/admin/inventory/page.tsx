@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAdminAuth } from '../useAdminAuth';
 import { FaPlus, FaEdit, FaTrash, FaBox, FaExclamationTriangle, FaSync, FaSearch } from 'react-icons/fa';
 
 type Product = {
@@ -22,6 +23,7 @@ type Stats = {
 };
 
 export default function Inventory() {
+  useAdminAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [stats, setStats] = useState<Stats>({ totalProducts: 0, lowStock: 0, totalValue: 0, categories: 0 });
   const [loading, setLoading] = useState(true);

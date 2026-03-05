@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAdminAuth } from '../useAdminAuth';
 import { FaTrash, FaUpload, FaImage } from 'react-icons/fa';
 
 type MediaItem = {
@@ -10,6 +11,7 @@ type MediaItem = {
 };
 
 export default function AdminGallery() {
+  useAdminAuth();
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
