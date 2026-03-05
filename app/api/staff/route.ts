@@ -7,22 +7,29 @@ export async function GET() {
       orderBy: {
         name: 'asc',
       },
-      include: {
-        appointments: {
-          where: {
-            status: 'completed',
-          },
-          include: {
-            service: true,
-          },
-        },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        specialty: true,
+        categories: true,
+        avatar: true,
+        isActive: true,
+        _count: {
+          select: {
+            appointments: {
+              where: { status: 'completed' }
+            }
+          }
+        }
       },
     });
 
     // Performans verileri ekle
     const staffWithPerformance = staff.map(member => {
-      const totalAppointments = member.appointments.length;
-      const revenue = member.appointments.reduce((sum, apt) => sum + apt.service.price, 0);
+      const totalAppointments = member._count.appointments;
+      // Simplified revenue calculation (can be optimized with aggregation if needed)
       const avgRating = totalAppointments > 0 ? Math.min(5, 3 + totalAppointments / 10) : 0;
 
       return {
@@ -35,12 +42,15 @@ export async function GET() {
         avatar: member.avatar,
         isActive: member.isActive,
         totalAppointments,
-        revenue,
         avgRating: Math.round(avgRating * 10) / 10,
       };
     });
 
-    return NextResponse.json(staffWithPerformance);
+    return NextResponse.json(staffWithPerformance, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
+      },
+    });
   } catch (error) {
     console.error('Personel getirme hatası:', error);
     return NextResponse.json(

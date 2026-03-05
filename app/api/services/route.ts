@@ -7,26 +7,46 @@ export async function GET() {
       where: {
         isActive: true,
       },
-      include: {
-        appointments: {
-          where: {
-            status: 'completed',
-          },
-        },
+      select: {
+        id: true,
+        name: true,
+        category: true,
+        duration: true,
+        price: true,
+        description: true,
+        isActive: true,
+        createdAt: true,
+        _count: {
+          select: {
+            appointments: {
+              where: { status: 'completed' }
+            }
+          }
+        }
       },
       orderBy: {
         category: 'asc',
       },
     });
 
-    // Her hizmet için tamamlanan randevu sayısını ekle
+    // Map to include completed count
     const servicesWithCount = services.map(service => ({
-      ...service,
-      completedCount: service.appointments.length,
-      appointments: undefined, // Gereksiz veriyi kaldır
+      id: service.id,
+      name: service.name,
+      category: service.category,
+      duration: service.duration,
+      price: service.price,
+      description: service.description,
+      isActive: service.isActive,
+      createdAt: service.createdAt,
+      completedCount: service._count.appointments,
     }));
 
-    return NextResponse.json(servicesWithCount);
+    return NextResponse.json(servicesWithCount, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
+    });
   } catch (error) {
     console.error('Hizmetleri getirme hatası:', error);
     return NextResponse.json(
