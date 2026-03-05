@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && prisma db push --skip-generate && npm run db:seed && next build",
     "start": "next start",
     "lint": "next lint",
     "db:seed": "tsx prisma/seed.ts"
@@ -15,8 +15,10 @@
   "dependencies": {
     "@gsap/react": "^2.1.2",
     "@libsql/client": "^0.17.0",
+    "@neondatabase/serverless": "^1.0.2",
     "@prisma/adapter-libsql": "^7.4.2",
     "@prisma/client": "^5.22.0",
+    "@vercel/postgres": "^0.10.0",
     "bcryptjs": "^3.0.3",
     "date-fns": "^3.3.1",
     "gsap": "^3.14.2",
