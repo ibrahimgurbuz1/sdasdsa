@@ -39,3 +39,7 @@ production.zip
 sdasdsa-deploy.zip
 *.sql
 convert-to-mysql.js
+production.zip
+sdasdsa-deploy.zip
+*.sql
+convert-to-mysql.js
