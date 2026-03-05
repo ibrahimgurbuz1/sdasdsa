@@ -35,3 +35,7 @@ yarn-error.log*
 next-env.d.ts
 
 /app/generated/prisma
+production.zip
+sdasdsa-deploy.zip
+*.sql
+convert-to-mysql.js
