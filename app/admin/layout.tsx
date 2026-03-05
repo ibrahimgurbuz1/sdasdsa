@@ -34,10 +34,15 @@ export default function AdminLayout({
     setIsChecking(false);
   }, [pathname, router]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/admin/logout', { method: 'POST' });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
     localStorage.removeItem('adminAuth');
     localStorage.removeItem('adminUser');
-    router.push('/');
+    router.push('/admin/login');
   };
 
   // Login sayfasında header gösterme

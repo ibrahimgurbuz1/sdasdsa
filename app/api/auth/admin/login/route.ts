@@ -30,10 +30,22 @@ export async function POST(request: NextRequest) {
     // Şifreyi çıkartarak döndür
     const { password: _, ...adminWithoutPassword } = admin;
 
-    return NextResponse.json({
+    // Create response with cookie
+    const response = NextResponse.json({
       success: true,
       user: adminWithoutPassword,
     });
+
+    // Set HTTP-only cookie for server-side auth
+    response.cookies.set('adminAuth', 'true', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    });
+
+    return response;
   } catch (error) {
     console.error('Admin login hatası:', error);
     return NextResponse.json(
