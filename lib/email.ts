@@ -1,15 +1,5 @@
 import nodemailer from 'nodemailer';
-
-// Hostinger SMTP transporter oluştur
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.hostinger.com',
-  port: parseInt(process.env.SMTP_PORT || '465'),
-  secure: true, // SSL için true
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-});
+import { queueEmail } from './emailQueue';
 
 interface AppointmentEmailData {
   customerName: string;
@@ -150,11 +140,12 @@ export async function sendAppointmentConfirmationEmail(data: AppointmentEmailDat
   };
 
   try {
-    await transporter.sendMail(mailOptions);
-    console.log(`Onay e-postası gönderildi: ${customerEmail}`);
-    return { success: true };
+    // Queue email for async sending (non-blocking)
+    const jobId = await queueEmail(mailOptions.to, mailOptions.subject, mailOptions.html);
+    console.log(`Onay e-postası kuyruğa eklendi: ${customerEmail} (JobID: ${jobId})`);
+    return { success: true, jobId };
   } catch (error) {
-    console.error('E-posta gönderme hatası:', error);
+    console.error('E-posta kuyruklandırma hatası:', error);
     return { success: false, error };
   }
 }
@@ -318,11 +309,12 @@ export async function sendAppointmentReceivedEmail(data: AppointmentEmailData) {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
-    console.log(`İşleme alındı e-postası gönderildi: ${customerEmail}`);
-    return { success: true };
+    // Queue email for async sending (non-blocking)
+    const jobId = await queueEmail(mailOptions.to, mailOptions.subject, mailOptions.html);
+    console.log(`İşleme alındı e-postası kuyruğa eklendi: ${customerEmail} (JobID: ${jobId})`);
+    return { success: true, jobId };
   } catch (error) {
-    console.error('E-posta gönderme hatası:', error);
+    console.error('E-posta kuyruklandırma hatası:', error);
     return { success: false, error };
   }
 }
