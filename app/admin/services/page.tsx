@@ -55,12 +55,12 @@ export default function Services() {
     try {
       const res = await fetch('/api/services', { cache: 'no-store' });
       if (res.ok) {
-        const data = await res.json();
+        const data: Service[] = await res.json();
         setServices(data);
 
-        const existingCategories = [...new Set(data.map((s: Service) => s.category).filter(Boolean))];
+        const existingCategories = [...new Set(data.map((s: Service) => s.category).filter((c): c is string => Boolean(c)))];
         if (existingCategories.length > 0) {
-          setCategoryOptions(prev => [...new Set([...prev, ...existingCategories])]);
+          setCategoryOptions(prev => [...new Set<string>([...prev, ...existingCategories])]);
         }
       }
     } catch (error) {
