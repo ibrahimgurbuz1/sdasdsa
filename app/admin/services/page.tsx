@@ -102,11 +102,11 @@ export default function Services() {
         throw new Error(err.error || 'İşlem başarısız');
       }
 
+      await fetchServices();
       alert(editingService ? 'Hizmet başarıyla güncellendi!' : 'Hizmet başarıyla eklendi!');
       setShowNewService(false);
       setEditingService(null);
       resetForm();
-      fetchServices();
     } catch (error: any) {
       alert(error.message || 'Bir hata oluştu');
       console.error('Hizmet kaydetme hatası:', error);
@@ -133,7 +133,8 @@ export default function Services() {
         const err = await res.json();
         throw new Error(err.error);
       }
-      fetchServices();
+      await fetchServices();
+      alert('Hizmet başarıyla silindi!');
     } catch (error: any) {
       alert(error.message || 'Hizmet silinemedi');
     }

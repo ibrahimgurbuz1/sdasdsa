@@ -125,11 +125,11 @@ export default function Staff() {
         throw new Error(err.error || 'İşlem başarısız');
       }
 
+      await fetchStaff();
       alert(editingStaff ? 'Personel başarıyla güncellendi!' : 'Personel başarıyla eklendi!');
       setShowNewStaff(false);
       setEditingStaff(null);
       resetForm();
-      fetchStaff();
     } catch (error: any) {
       alert(error.message || 'Bir hata oluştu');
       console.error('Personel kaydetme hatası:', error);
@@ -163,8 +163,9 @@ export default function Staff() {
         const err = await res.json();
         throw new Error(err.error);
       }
-      fetchStaff();
+      await fetchStaff();
       setSelectedStaff(null);
+      alert('Personel başarıyla silindi!');
     } catch (error: any) {
       alert(error.message || 'Personel silinemedi');
     }

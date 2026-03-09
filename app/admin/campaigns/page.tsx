@@ -90,8 +90,8 @@ export default function Campaigns() {
         throw new Error(err.error || 'İşlem başarısız');
       }
 
+      await fetchCampaigns();
       alert(editingCampaign ? 'Kampanya başarıyla güncellendi!' : 'Kampanya başarıyla eklendi!');
-      fetchCampaigns();
       setShowNewCampaign(false);
       setEditingCampaign(null);
       setFormData({ title: '', description: '', discount: '', startDate: '', endDate: '', status: 'active' });
@@ -106,11 +106,15 @@ export default function Campaigns() {
     
     try {
       const res = await fetch(`/api/campaigns?id=${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        fetchCampaigns();
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Silme başarısız');
       }
-    } catch (error) {
-      console.error('Kampanya silinemedi:', error);
+      await fetchCampaigns();
+      alert('Kampanya başarıyla silindi!');
+    } catch (error: any) {
+      alert(error.message || 'Kampanya silinemedi');
+      console.error('Kampanya silme hatası:', error);
     }
   };
 

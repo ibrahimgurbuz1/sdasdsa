@@ -118,8 +118,8 @@ export default function Inventory() {
         throw new Error(err.error || 'İşlem başarısız');
       }
 
+      await fetchInventory();
       alert(editingProduct ? 'Ürün başarıyla güncellendi!' : 'Ürün başarıyla eklendi!');
-      fetchInventory();
       setShowNewProduct(false);
       setEditingProduct(null);
       setFormData({ name: '', category: '', stock: '', minStock: '10', unit: 'adet', price: '', supplier: '' });
@@ -134,11 +134,15 @@ export default function Inventory() {
     
     try {
       const res = await fetch(`/api/inventory?id=${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        fetchInventory();
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Silme başarısız');
       }
-    } catch (error) {
-      console.error('Ürün silinemedi:', error);
+      await fetchInventory();
+      alert('Ürün başarıyla silindi!');
+    } catch (error: any) {
+      alert(error.message || 'Ürün silinemedi');
+      console.error('Ürün silme hatası:', error);
     }
   };
 

@@ -90,9 +90,9 @@ export default function AdminGallery() {
         url: data.url,
       };
 
-      setMediaItems([newItem, ...mediaItems]);
-      alert('Dosya başarıyla yüklendi!');
+      setMediaItems(prevItems => [newItem, ...prevItems]);
       setShowUploadModal(false);
+      alert('Dosya başarıyla yüklendi!');
     } catch (error: any) {
       alert(error.message || 'Dosya yüklenemedi');
       console.error('Yükleme hatası:', error);
@@ -139,14 +139,16 @@ export default function AdminGallery() {
       type: isVideo ? 'video' : 'image',
       url: formData.url,
     };
-    setMediaItems([newItem, ...mediaItems]);
+    setMediaItems(prevItems => [newItem, ...prevItems]);
     setShowUploadModal(false);
     setFormData({ url: '' });
+    alert('Medya başarıyla eklendi!');
   };
 
   const handleDelete = (id: string) => {
     if (!confirm('Bu medyayı galeride gizlemek istediğinize emin misiniz?')) return;
-    setMediaItems(mediaItems.filter(item => item.id !== id));
+    setMediaItems(prevItems => prevItems.filter(item => item.id !== id));
+    alert('Medya silindi!');
   };
 
   return (
