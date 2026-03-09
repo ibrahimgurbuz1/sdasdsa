@@ -14,7 +14,7 @@ type Service = {
   completedCount: number;
 };
 
-const CATEGORIES = ['Saç Bakımı', 'Sakal & Bıyık', 'Cilt Bakımı', 'Masaj', 'Tırnak Bakımı', 'Ağda & Epilasyon', 'Makyaj'];
+const DEFAULT_CATEGORIES = ['Saç Bakımı', 'Sakal & Bıyık', 'Cilt Bakımı', 'Masaj', 'Tırnak Bakımı', 'Ağda & Epilasyon', 'Makyaj'];
 
 export default function Services() {
   useAdminAuth();
@@ -22,14 +22,34 @@ export default function Services() {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(DEFAULT_CATEGORIES);
   const [formData, setFormData] = useState({
     name: '',
-    category: CATEGORIES[0],
+    category: DEFAULT_CATEGORIES[0],
     duration: '',
     price: '',
     description: '',
   });
   const [newCategory, setNewCategory] = useState('');
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedCategories = localStorage.getItem('serviceCategories');
+    if (storedCategories) {
+      try {
+        const parsed = JSON.parse(storedCategories);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setCategoryOptions(parsed);
+        }
+      } catch {
+        // ignore malformed local storage values
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('serviceCategories', JSON.stringify(categoryOptions));
+  }, [categoryOptions]);
 
   const fetchServices = async () => {
     try {
@@ -37,6 +57,11 @@ export default function Services() {
       if (res.ok) {
         const data = await res.json();
         setServices(data);
+
+        const existingCategories = [...new Set(data.map((s: Service) => s.category).filter(Boolean))];
+        if (existingCategories.length > 0) {
+          setCategoryOptions(prev => [...new Set([...prev, ...existingCategories])]);
+        }
       }
     } catch (error) {
       console.error('Hizmetler yüklenemedi:', error);
@@ -54,12 +79,13 @@ export default function Services() {
   const resetForm = () => {
     setFormData({
       name: '',
-      category: CATEGORIES[0],
+      category: categoryOptions[0] || DEFAULT_CATEGORIES[0],
       duration: '',
       price: '',
       description: '',
     });
     setNewCategory('');
+    setEditingCategory(null);
   };
 
   const addCategory = () => {
@@ -69,20 +95,125 @@ export default function Services() {
       return;
     }
 
-    const hasCategory = allFormCategories.some(
+    const hasCategory = categoryOptions.some(
       (cat) => cat.toLowerCase() === nextCategory.toLowerCase()
     );
 
     if (hasCategory) {
       alert('Bu kategori zaten mevcut');
-      setFormData({ ...formData, category: allFormCategories.find(cat => cat.toLowerCase() === nextCategory.toLowerCase()) || formData.category });
+      setFormData({ ...formData, category: categoryOptions.find(cat => cat.toLowerCase() === nextCategory.toLowerCase()) || formData.category });
       setNewCategory('');
       return;
     }
 
+    setCategoryOptions(prev => [...prev, nextCategory]);
     setFormData({ ...formData, category: nextCategory });
     setNewCategory('');
-    alert('Kategori eklendi, hizmeti kaydederek kalıcı hale getirebilirsiniz.');
+    alert('Kategori eklendi.');
+  };
+
+  const startEditCategory = (category: string) => {
+    setEditingCategory(category);
+    setNewCategory(category);
+  };
+
+  const saveEditedCategory = async () => {
+    if (!editingCategory) return;
+
+    const updatedName = newCategory.trim();
+    if (!updatedName) {
+      alert('Kategori adı boş olamaz');
+      return;
+    }
+
+    const duplicate = categoryOptions.some(
+      cat => cat.toLowerCase() === updatedName.toLowerCase() && cat.toLowerCase() !== editingCategory.toLowerCase()
+    );
+    if (duplicate) {
+      alert('Bu kategori adı zaten var');
+      return;
+    }
+
+    const affected = services.filter(s => s.category === editingCategory);
+    if (affected.length > 0) {
+      try {
+        await Promise.all(
+          affected.map((service) =>
+            fetch('/api/services', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: service.id,
+                name: service.name,
+                category: updatedName,
+                duration: service.duration,
+                price: service.price,
+                description: service.description,
+              }),
+            })
+          )
+        );
+      } catch {
+        alert('Kategori güncellenirken hata oluştu');
+        return;
+      }
+    }
+
+    setServices(prev => prev.map(s => s.category === editingCategory ? { ...s, category: updatedName } : s));
+    setCategoryOptions(prev => prev.map(cat => cat === editingCategory ? updatedName : cat));
+    if (formData.category === editingCategory) {
+      setFormData({ ...formData, category: updatedName });
+    }
+    setEditingCategory(null);
+    setNewCategory('');
+    alert('Kategori güncellendi.');
+  };
+
+  const deleteCategory = async (category: string) => {
+    if (categoryOptions.length <= 1) {
+      alert('En az bir kategori kalmalıdır');
+      return;
+    }
+
+    const affected = services.filter(s => s.category === category);
+    const fallbackCategory = categoryOptions.find(cat => cat !== category) || DEFAULT_CATEGORIES[0];
+
+    if (affected.length > 0) {
+      const confirmed = confirm(`Bu kategoride ${affected.length} hizmet var. Hizmetler "${fallbackCategory}" kategorisine taşınsın mı?`);
+      if (!confirmed) return;
+
+      try {
+        await Promise.all(
+          affected.map((service) =>
+            fetch('/api/services', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: service.id,
+                name: service.name,
+                category: fallbackCategory,
+                duration: service.duration,
+                price: service.price,
+                description: service.description,
+              }),
+            })
+          )
+        );
+        setServices(prev => prev.map(s => s.category === category ? { ...s, category: fallbackCategory } : s));
+      } catch {
+        alert('Kategori silinirken hata oluştu');
+        return;
+      }
+    }
+
+    setCategoryOptions(prev => prev.filter(cat => cat !== category));
+    if (formData.category === category) {
+      setFormData({ ...formData, category: fallbackCategory });
+    }
+    if (selectedCategory === category) {
+      setSelectedCategory('Tümü');
+    }
+    alert('Kategori silindi.');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -174,7 +305,6 @@ export default function Services() {
 
   // Benzersiz kategorileri al (mevcut hizmetlerden + sabit listeden)
   const existingCategories = [...new Set(services.map(s => s.category))];
-  const allFormCategories = [...new Set([...CATEGORIES, ...existingCategories])];
   const allFilterCategories = ['Tümü', ...existingCategories];
 
   const [selectedCategory, setSelectedCategory] = useState('Tümü');
@@ -251,6 +381,71 @@ export default function Services() {
               {category}
             </button>
           ))}
+        </div>
+
+        <div className="mt-6 pt-6 border-t border-gray-100">
+          <p className="text-sm font-semibold text-gray-700 mb-3">Kategori Yönetimi</p>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {categoryOptions.map((category) => (
+              <div key={category} className="flex items-center gap-1 bg-gray-100 rounded-lg px-2 py-1">
+                <span className="text-sm text-gray-700 px-2">{category}</span>
+                <button
+                  type="button"
+                  onClick={() => startEditCategory(category)}
+                  className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                  title="Düzenle"
+                >
+                  <FaEdit size={12} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => deleteCategory(category)}
+                  className="p-1 text-red-600 hover:bg-red-100 rounded"
+                  title="Sil"
+                >
+                  <FaTrash size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none bg-white text-black"
+              placeholder={editingCategory ? 'Kategori adını güncelle' : 'Yeni kategori ekle'}
+            />
+            {editingCategory ? (
+              <>
+                <button
+                  type="button"
+                  onClick={saveEditedCategory}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold"
+                >
+                  Kaydet
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingCategory(null);
+                    setNewCategory('');
+                  }}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-semibold"
+                >
+                  İptal
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={addCategory}
+                className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 font-semibold"
+              >
+                Ekle
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -345,26 +540,10 @@ export default function Services() {
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none bg-white text-black cursor-pointer"
                   >
-                    {allFormCategories.map(cat => (
+                    {categoryOptions.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>
-                  <div className="flex gap-2 mt-2">
-                    <input
-                      type="text"
-                      value={newCategory}
-                      onChange={(e) => setNewCategory(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none bg-white text-black"
-                      placeholder="Yeni kategori ekle"
-                    />
-                    <button
-                      type="button"
-                      onClick={addCategory}
-                      className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 font-semibold"
-                    >
-                      Ekle
-                    </button>
-                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Süre (dakika)</label>
