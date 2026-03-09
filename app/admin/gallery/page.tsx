@@ -18,7 +18,8 @@ type ApiGalleryItem = {
   imageUrl: string;
 };
 
-const MAX_FILE_SIZE = 12 * 1024 * 1024;
+// Base64 JSON olarak API'ye gidecegi icin limit dusuk tutuluyor.
+const MAX_FILE_SIZE = 2 * 1024 * 1024;
 
 const mapApiItem = (item: ApiGalleryItem): MediaItem => ({
   id: item.id,
@@ -67,7 +68,7 @@ export default function AdminGallery() {
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      alert('Maksimum dosya boyutu 12MB');
+      alert('Dosya cok buyuk. Dosya secimi icin maksimum 2MB, daha buyuk dosyalarda URL ile ekleyin.');
       return;
     }
 
@@ -274,7 +275,7 @@ export default function AdminGallery() {
                   >
                     <FaUpload className="inline mr-2" />Dosya Sec
                   </button>
-                  <p className="text-xs text-gray-500 mt-3">Maksimum 12MB</p>
+                  <p className="text-xs text-gray-500 mt-3">Maksimum 2MB (buyuk dosyalarda URL kullanin)</p>
                 </>
               )}
             </div>

@@ -1,30 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+type GalleryItem = {
+  id: string;
+  title: string;
+  category: string;
+  imageUrl: string;
+};
 
 export default function GalleryPage() {
   const [selectedMedia, setSelectedMedia] = useState<{ type: 'image' | 'video'; src: string } | null>(null);
+  const [mediaItems, setMediaItems] = useState<GalleryItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Tüm medyalar karışık olarak (foto ve video ayrımı yok)
-  const mediaItems = [
-    { type: 'image' as const, src: '/images/585423595_122108156013083638_4684200036309214416_n..jpg' },
-    { type: 'video' as const, src: '/videos/AQMN5f4-Mi1kZ9-828w4nmsfVa5ptaE2TsfdmOkdlnZPNGRedbK31G5hUKTxh3yeVQYNczAR592tpGoCRSJtynfF9dtG5OlLR-1TsHk.mp4' },
-    { type: 'image' as const, src: '/images/589167628_122109067953083638_1588938081792428857_n..jpg' },
-    { type: 'video' as const, src: '/videos/AQNM2vLRAvzqE2mKGItz3qs8hFzhYPjr2KyBbw4Asngycvi2xK5yeMJtEFGOMG3_-KUUQUlt8LJC5uCGoOjayIOLuMY8Np1c.mp4' },
-    { type: 'image' as const, src: '/images/594100529_122110689213083638_7179114761612870739_n..jpg' },
-    { type: 'video' as const, src: '/videos/AQNp-4_w7hmIbfBNYvkN8BkK2NIlwMInCIF-TiKENhy8aWL3YWE1M-LqsnVDkKSF-GabL6_R9sbJqSa9cQ0nBB6wKS70rOTs0seW2lY.mp4' },
-    { type: 'image' as const, src: '/images/596063079_122111095983083638_3381646773219951484_n..jpg' },
-    { type: 'video' as const, src: '/videos/AQOQg9-6E9RaTFctbG85lg3SHNlhKkjb5PuS_iz71yZsj8EaAmxyAZUki5Z-ely5enckfiHrSVR7W0zZBj43VpyU_6Edrsx_.mp4' },
-    { type: 'image' as const, src: '/images/597551827_122111562711083638_8445761000020730382_n..jpg' },
-    { type: 'video' as const, src: '/videos/AQOlzQjaPABDMfNmUuq21hsxUKj-fkVFCfz6M89jV0bG9kI9OYhmqfpvysqOYlr3v4ZCfRqpUE70iAws8TJMmM_Ag9NeDmat.mp4' },
-    { type: 'image' as const, src: '/images/597552177_122111862837083638_6008478305036244426_n..jpg' },
-    { type: 'video' as const, src: '/videos/AQP9ae5TdJwcaiYBwvxo5S09nAtfNv7c2F6AO8QfRCiXlcessL9MqgpdTNc3g5alp7aQp1G7_KdkZwoa5Sgf_1MwOOYZjfZY.mp4' },
-    { type: 'image' as const, src: '/images/599941626_122112861981083638_8137216023031339708_n..jpg' },
-    { type: 'video' as const, src: '/videos/AQPvCm-k-LesSx0qZ3dfPb5ctrx-tW71PpxnT5AdajIIjtVesVnGbNUwpIDYEYxrMaxitjdiZOaG7P_AUkmofGgeogEkDuGB.mp4' },
-    { type: 'image' as const, src: '/images/600298904_122112477351083638_6274367331590897151_n..jpg' },
-    { type: 'video' as const, src: '/videos/AQPxaELP6EBfG6eXxBeAaLI_vebduN8gXvxUiIlP3GXOZb9UHOLpRu9R6q_vW6fhTMMiKjB7Z3TZqEl9HZARKPpRBLv6YmH9.mp4' },
-    { type: 'image' as const, src: '/images/602995360_122113242213083638_5246041994386207911_n..jpg' },
-  ];
+  const fetchGallery = async () => {
+    try {
+      const res = await fetch('/api/gallery', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = (await res.json()) as GalleryItem[];
+      setMediaItems(data);
+    } catch (error) {
+      console.error('Galeri verisi yuklenemedi:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGallery();
+    const interval = setInterval(fetchGallery, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div>
@@ -42,16 +49,21 @@ export default function GalleryPage() {
       {/* Gallery Section - Tüm medyalar karışık */}
       <section className="py-16 bg-[#0a0a0a]">
         <div className="container mx-auto px-4">
+          {loading && <p className="text-gray-400 text-center mb-6">Yukleniyor...</p>}
+          {!loading && mediaItems.length === 0 && <p className="text-gray-400 text-center mb-6">Henuz medya yok.</p>}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {mediaItems.map((item, index) => (
+            {mediaItems.map((item, index) => {
+              const type = item.category === 'video' ? 'video' : 'image';
+              const src = item.imageUrl;
+              return (
               <div
-                key={index}
+                key={item.id}
                 className="group relative rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer border-2 border-transparent hover:border-[#C5A059]/50"
-                onClick={() => setSelectedMedia({ type: item.type, src: item.src })}
+                onClick={() => setSelectedMedia({ type, src })}
               >
-                {item.type === 'image' ? (
+                {type === 'image' ? (
                   <img 
-                    src={item.src} 
+                    src={src} 
                     alt={`Galeri ${index + 1}`}
                     className="w-full h-80 object-cover transform group-hover:scale-110 transition-transform duration-500"
                   />
@@ -65,7 +77,7 @@ export default function GalleryPage() {
                       onMouseEnter={(e) => e.currentTarget.play()}
                       onMouseLeave={(e) => { e.currentTarget.pause(); e.currentTarget.currentTime = 5; }}
                     >
-                      <source src={item.src} type="video/mp4" />
+                      <source src={src} type="video/mp4" />
                     </video>
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="w-16 h-16 bg-[#C5A059] rounded-full flex items-center justify-center opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all">
@@ -79,7 +91,7 @@ export default function GalleryPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                 </div>
               </div>
-            ))}
+            );})}
           </div>
         </div>
       </section>
