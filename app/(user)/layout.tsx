@@ -34,7 +34,6 @@ function LayoutContent({
     { name: 'Galeri', href: '/gallery' },
     { name: 'Randevu Al', href: '/booking' },
     { name: 'İletişim', href: '/contact' },
-    { name: 'Hizmetlerim', href: '/my-services' },
   ];
 
   if (loading) {
