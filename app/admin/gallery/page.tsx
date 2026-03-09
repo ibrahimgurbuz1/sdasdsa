@@ -10,6 +10,8 @@ type MediaItem = {
   url: string;
 };
 
+const STORAGE_KEY = 'gallery_items';
+
 export default function AdminGallery() {
   useAdminAuth();
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
@@ -22,8 +24,8 @@ export default function AdminGallery() {
     url: '',
   });
 
-  // Tüm medya dosyaları karışık
-  const staticMedia: MediaItem[] = [
+  // Default medya
+  const defaultMedia: MediaItem[] = [
     { id: 'img-1', type: 'image', url: '/images/585423595_122108156013083638_4684200036309214416_n..jpg' },
     { id: 'vid-1', type: 'video', url: '/videos/AQMN5f4-Mi1kZ9-828w4nmsfVa5ptaE2TsfdmOkdlnZPNGRedbK31G5hUKTxh3yeVQYNczAR592tpGoCRSJtynfF9dtG5OlLR-1TsHk.mp4' },
     { id: 'img-2', type: 'image', url: '/images/589167628_122109067953083638_1588938081792428857_n..jpg' },
@@ -44,14 +46,28 @@ export default function AdminGallery() {
   ];
 
   useEffect(() => {
-    setMediaItems(staticMedia);
+    // localStorage'dan yükle, yoksa default kullan
+    const storedItems = localStorage.getItem(STORAGE_KEY);
+    if (storedItems) {
+      try {
+        setMediaItems(JSON.parse(storedItems));
+      } catch {
+        setMediaItems(defaultMedia);
+      }
+    } else {
+      setMediaItems(defaultMedia);
+    }
     setLoading(false);
   }, []);
+
+  // localStorage'a kaydet
+  const saveToStorage = (items: MediaItem[]) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  };
 
   const handleFileUpload = async (file: File) => {
     if (!file) return;
 
-    // Dosya tipini kontrol et
     const isImage = file.type.startsWith('image/');
     const isVideo = file.type.startsWith('video/');
 
@@ -60,42 +76,34 @@ export default function AdminGallery() {
       return;
     }
 
-    // Dosya boyutu kontrolü (50MB)
-    const maxSize = 50 * 1024 * 1024;
+    const maxSize = 5 * 1024 * 1024; // 5MB (localStorage sınırı düşük)
     if (file.size > maxSize) {
-      alert('Dosya boyutu maksimum 50MB olabilir');
+      alert('Dosya boyutu maksimum 5MB olabilir (localStorage sınırlaması)');
       return;
     }
 
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const dataUrl = reader.result as string;
+        
+        const newItem: MediaItem = {
+          id: `custom-${Date.now()}`,
+          type: isImage ? 'image' : 'video',
+          url: dataUrl,
+        };
 
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Yükleme başarısız');
-      }
-
-      const data = await res.json();
-      
-      const newItem: MediaItem = {
-        id: `custom-${Date.now()}`,
-        type: data.type,
-        url: data.url,
+        const updatedItems = [newItem, ...mediaItems];
+        setMediaItems(updatedItems);
+        saveToStorage(updatedItems);
+        setShowUploadModal(false);
+        alert('Medya başarıyla eklendi!');
       };
-
-      setMediaItems(prevItems => [newItem, ...prevItems]);
-      setShowUploadModal(false);
-      alert('Dosya başarıyla yüklendi!');
+      reader.readAsDataURL(file);
     } catch (error: any) {
-      alert(error.message || 'Dosya yüklenemedi');
-      console.error('Yükleme hatası:', error);
+      alert(error.message || 'Dosya işlenemedi');
+      console.error('Dosya işleme hatası:', error);
     } finally {
       setUploading(false);
     }
@@ -139,7 +147,9 @@ export default function AdminGallery() {
       type: isVideo ? 'video' : 'image',
       url: formData.url,
     };
-    setMediaItems(prevItems => [newItem, ...prevItems]);
+    const updatedItems = [newItem, ...mediaItems];
+    setMediaItems(updatedItems);
+    saveToStorage(updatedItems);
     setShowUploadModal(false);
     setFormData({ url: '' });
     alert('Medya başarıyla eklendi!');
@@ -147,7 +157,9 @@ export default function AdminGallery() {
 
   const handleDelete = (id: string) => {
     if (!confirm('Bu medyayı galeride gizlemek istediğinize emin misiniz?')) return;
-    setMediaItems(prevItems => prevItems.filter(item => item.id !== id));
+    const updatedItems = mediaItems.filter(item => item.id !== id);
+    setMediaItems(updatedItems);
+    saveToStorage(updatedItems);
     alert('Medya silindi!');
   };
 
