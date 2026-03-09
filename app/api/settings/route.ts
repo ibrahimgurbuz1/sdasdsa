@@ -92,6 +92,14 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
+    // Boş obje kontrolü
+    if (!body || Object.keys(body).length === 0) {
+      return NextResponse.json(
+        { error: 'Güncellenecek ayar bulunamadı' },
+        { status: 400 }
+      );
+    }
+    
     // Her ayar için upsert işlemi yap
     const updates = Object.entries(body).map(([key, value]) =>
       (prisma as any).siteSettings.upsert({
@@ -103,7 +111,7 @@ export async function POST(request: NextRequest) {
     
     await Promise.all(updates);
     
-    return NextResponse.json({ success: true, message: 'Ayarlar güncellendi' });
+    return NextResponse.json({ success: true, message: 'Ayarlar başarıyla güncellendi' });
   } catch (error) {
     console.error('Ayarları güncelleme hatası:', error);
     return NextResponse.json(

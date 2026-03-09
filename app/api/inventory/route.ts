@@ -32,19 +32,45 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { name, category, stock, minStock, unit, price, supplier } = body;
 
+    // Zorunlu alanlar
+    if (!name?.trim() || !category?.trim() || stock === undefined || stock === null || price === undefined || price === null) {
+      return NextResponse.json(
+        { error: 'Ürün adı, kategori, stok ve fiyat zorunludur' },
+        { status: 400 }
+      );
+    }
+
+    // Sayısal değer kontrolleri
+    const parsedStock = parseInt(stock);
+    const parsedMinStock = parseInt(minStock) || 10;
+    const parsedPrice = parseFloat(price);
+
+    if (isNaN(parsedStock) || parsedStock < 0) {
+      return NextResponse.json(
+        { error: 'Geçersiz stok miktarı' },
+        { status: 400 }
+      );
+    }
+    if (isNaN(parsedPrice) || parsedPrice < 0) {
+      return NextResponse.json(
+        { error: 'Geçersiz fiyat değeri' },
+        { status: 400 }
+      );
+    }
+
     const product = await prisma.product.create({
       data: {
-        name,
-        category,
-        stock: parseInt(stock),
-        minStock: parseInt(minStock) || 10,
-        unit,
-        price: parseFloat(price),
-        supplier,
+        name: name.trim(),
+        category: category.trim(),
+        stock: parsedStock,
+        minStock: parsedMinStock,
+        unit: unit?.trim() || 'adet',
+        price: parsedPrice,
+        supplier: supplier?.trim() || '',
       },
     });
 
-    return NextResponse.json(product);
+    return NextResponse.json(product, { status: 201 });
   } catch (error) {
     console.error('Ürün oluşturma hatası:', error);
     return NextResponse.json(
@@ -57,15 +83,52 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, ...data } = body;
+    const { id, name, category, stock, minStock, unit, price, supplier } = body;
 
-    if (data.stock) data.stock = parseInt(data.stock);
-    if (data.minStock) data.minStock = parseInt(data.minStock);
-    if (data.price) data.price = parseFloat(data.price);
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Ürün ID gerekli' },
+        { status: 400 }
+      );
+    }
+
+    // Zorunlu alanları kontrol et
+    if (!name?.trim() || !category?.trim() || stock === undefined || stock === null || price === undefined || price === null) {
+      return NextResponse.json(
+        { error: 'Ürün adı, kategori, stok ve fiyat zorunludur' },
+        { status: 400 }
+      );
+    }
+
+    // Sayısal değer kontrolleri
+    const parsedStock = parseInt(stock);
+    const parsedMinStock = parseInt(minStock) || 10;
+    const parsedPrice = parseFloat(price);
+
+    if (isNaN(parsedStock) || parsedStock < 0) {
+      return NextResponse.json(
+        { error: 'Geçersiz stok miktarı' },
+        { status: 400 }
+      );
+    }
+    if (isNaN(parsedPrice) || parsedPrice < 0) {
+      return NextResponse.json(
+        { error: 'Geçersiz fiyat değeri' },
+        { status: 400 }
+      );
+    }
 
     const product = await prisma.product.update({
       where: { id },
-      data,
+      data: {
+        name: name.trim(),
+        category: category.trim(),
+        stock: parsedStock,
+        minStock: parsedMinStock,
+        unit: unit?.trim() || 'adet',
+        price: parsedPrice,
+        supplier: supplier?.trim() || '',
+      },
     });
 
     return NextResponse.json(product);

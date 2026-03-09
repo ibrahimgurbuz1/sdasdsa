@@ -73,11 +73,39 @@ export default function Inventory() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Form validasyonu
+    if (!formData.name.trim()) {
+      alert('Ürün adı boş olamaz');
+      return;
+    }
+    if (!formData.category.trim()) {
+      alert('Kategori boş olamaz');
+      return;
+    }
+    if (!formData.stock || parseInt(formData.stock) < 0) {
+      alert('Geçerli bir stok miktarı giriniz');
+      return;
+    }
+    if (!formData.price || parseFloat(formData.price) < 0) {
+      alert('Geçerli bir fiyat giriniz');
+      return;
+    }
+
     try {
       const method = editingProduct ? 'PATCH' : 'POST';
-      const body = editingProduct 
-        ? { id: editingProduct.id, ...formData }
-        : formData;
+      
+      // Veriyi düzgün formatta gönder
+      const body = {
+        ...(editingProduct && { id: editingProduct.id }),
+        name: formData.name.trim(),
+        category: formData.category.trim(),
+        stock: parseInt(formData.stock),
+        minStock: parseInt(formData.minStock) || 10,
+        unit: formData.unit.trim(),
+        price: parseFloat(formData.price),
+        supplier: formData.supplier.trim(),
+      };
 
       const res = await fetch('/api/inventory', {
         method,
@@ -85,14 +113,19 @@ export default function Inventory() {
         body: JSON.stringify(body),
       });
 
-      if (res.ok) {
-        fetchInventory();
-        setShowNewProduct(false);
-        setEditingProduct(null);
-        setFormData({ name: '', category: '', stock: '', minStock: '10', unit: 'adet', price: '', supplier: '' });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'İşlem başarısız');
       }
-    } catch (error) {
-      console.error('Ürün kaydedilemedi:', error);
+
+      alert(editingProduct ? 'Ürün başarıyla güncellendi!' : 'Ürün başarıyla eklendi!');
+      fetchInventory();
+      setShowNewProduct(false);
+      setEditingProduct(null);
+      setFormData({ name: '', category: '', stock: '', minStock: '10', unit: 'adet', price: '', supplier: '' });
+    } catch (error: any) {
+      alert(error.message || 'Bir hata oluştu');
+      console.error('Ürün kaydetme hatası:', error);
     }
   };
 

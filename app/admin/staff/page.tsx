@@ -77,12 +77,42 @@ export default function Staff() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Form validasyonu
+    if (!formData.name.trim()) {
+      alert('Ad boş olamaz');
+      return;
+    }
+    if (!formData.email.trim() || !formData.email.includes('@')) {
+      alert('Geçerli bir e-posta adresi giriniz');
+      return;
+    }
+    if (!formData.phone.trim()) {
+      alert('Telefon numarası boş olamaz');
+      return;
+    }
+    if (!formData.specialty.trim()) {
+      alert('Uzmanlık alanı boş olamaz');
+      return;
+    }
+    if (formData.categories.length === 0) {
+      alert('En az bir kategori seçiniz');
+      return;
+    }
+
     try {
       const url = '/api/staff';
       const method = editingStaff ? 'PUT' : 'POST';
-      const body = editingStaff
-        ? { id: editingStaff.id, ...formData, categories: JSON.stringify(formData.categories) }
-        : { ...formData, categories: JSON.stringify(formData.categories) };
+      
+      const body = {
+        ...(editingStaff && { id: editingStaff.id }),
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        specialty: formData.specialty.trim(),
+        categories: JSON.stringify(formData.categories),
+        isActive: formData.isActive,
+      };
 
       const res = await fetch(url, {
         method,
@@ -95,12 +125,14 @@ export default function Staff() {
         throw new Error(err.error || 'İşlem başarısız');
       }
 
+      alert(editingStaff ? 'Personel başarıyla güncellendi!' : 'Personel başarıyla eklendi!');
       setShowNewStaff(false);
       setEditingStaff(null);
       resetForm();
       fetchStaff();
     } catch (error: any) {
       alert(error.message || 'Bir hata oluştu');
+      console.error('Personel kaydetme hatası:', error);
     }
   };
 

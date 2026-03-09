@@ -115,16 +115,41 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Zorunlu alanları kontrol et
+    if (!name?.trim() || !email?.trim() || !phone?.trim() || !specialty?.trim() || !categories) {
+      return NextResponse.json(
+        { error: 'Ad, e-posta, telefon, uzmanlık ve kategoriler zorunludur' },
+        { status: 400 }
+      );
+    }
+
+    // E-posta format kontrolü
+    if (!email.includes('@')) {
+      return NextResponse.json(
+        { error: 'Geçerli bir e-posta adresi giriniz' },
+        { status: 400 }
+      );
+    }
+
+    // E-posta benzersizliği kontrolü (kendi kaydı hariç)
+    const existing = await prisma.staff.findUnique({ where: { email: email.trim() } });
+    if (existing && existing.id !== id) {
+      return NextResponse.json(
+        { error: 'Bu e-posta adresi başka bir personel tarafından kullanılıyor' },
+        { status: 400 }
+      );
+    }
+
     const staff = await prisma.staff.update({
       where: { id },
       data: {
-        ...(name && { name }),
-        ...(email && { email }),
-        ...(phone && { phone }),
-        ...(specialty && { specialty }),
-        ...(categories && { categories: typeof categories === 'object' ? JSON.stringify(categories) : categories }),
-        ...(avatar !== undefined && { avatar }),
-        ...(isActive !== undefined && { isActive }),
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        specialty: specialty.trim(),
+        categories: typeof categories === 'object' ? JSON.stringify(categories) : categories,
+        avatar: avatar || null,
+        isActive: isActive !== undefined ? isActive : true,
       },
     });
 

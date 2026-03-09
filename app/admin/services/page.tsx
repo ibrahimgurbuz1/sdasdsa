@@ -62,12 +62,34 @@ export default function Services() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Form validasyonu
+    if (!formData.name.trim()) {
+      alert('Hizmet adı boş olamaz');
+      return;
+    }
+    if (!formData.duration || parseInt(formData.duration) <= 0) {
+      alert('Geçerli bir süre giriniz');
+      return;
+    }
+    if (!formData.price || parseFloat(formData.price) < 0) {
+      alert('Geçerli bir fiyat giriniz');
+      return;
+    }
+
     try {
       const url = '/api/services';
       const method = editingService ? 'PUT' : 'POST';
-      const body = editingService
-        ? { id: editingService.id, ...formData }
-        : formData;
+      
+      // Veriyi düzgün formatta gönder
+      const body = {
+        ...(editingService && { id: editingService.id }),
+        name: formData.name.trim(),
+        category: formData.category.trim(),
+        duration: formData.duration,
+        price: parseFloat(formData.price),
+        description: formData.description.trim(),
+      };
 
       const res = await fetch(url, {
         method,
@@ -80,12 +102,14 @@ export default function Services() {
         throw new Error(err.error || 'İşlem başarısız');
       }
 
+      alert(editingService ? 'Hizmet başarıyla güncellendi!' : 'Hizmet başarıyla eklendi!');
       setShowNewService(false);
       setEditingService(null);
       resetForm();
       fetchServices();
     } catch (error: any) {
       alert(error.message || 'Bir hata oluştu');
+      console.error('Hizmet kaydetme hatası:', error);
     }
   };
 

@@ -50,11 +50,34 @@ export default function Campaigns() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Form validasyonu
+    if (!formData.title.trim()) {
+      alert('Kampanya başlığı boş olamaz');
+      return;
+    }
+    if (!formData.discount || parseInt(formData.discount) < 0 || parseInt(formData.discount) > 100) {
+      alert('Geçerli bir indirim oranı giriniz (0-100)');
+      return;
+    }
+    if (!formData.startDate || !formData.endDate) {
+      alert('Başlangıç ve bitiş tarihleri zorunludur');
+      return;
+    }
+
     try {
       const method = editingCampaign ? 'PATCH' : 'POST';
-      const body = editingCampaign 
-        ? { id: editingCampaign.id, ...formData }
-        : formData;
+      
+      // Veriyi düzgün formatta gönder
+      const body = {
+        ...(editingCampaign && { id: editingCampaign.id }),
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        discount: parseInt(formData.discount),
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        status: formData.status,
+      };
 
       const res = await fetch('/api/campaigns', {
         method,
@@ -62,14 +85,19 @@ export default function Campaigns() {
         body: JSON.stringify(body),
       });
 
-      if (res.ok) {
-        fetchCampaigns();
-        setShowNewCampaign(false);
-        setEditingCampaign(null);
-        setFormData({ title: '', description: '', discount: '', startDate: '', endDate: '', status: 'active' });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'İşlem başarısız');
       }
-    } catch (error) {
-      console.error('Kampanya kaydedilemedi:', error);
+
+      alert(editingCampaign ? 'Kampanya başarıyla güncellendi!' : 'Kampanya başarıyla eklendi!');
+      fetchCampaigns();
+      setShowNewCampaign(false);
+      setEditingCampaign(null);
+      setFormData({ title: '', description: '', discount: '', startDate: '', endDate: '', status: 'active' });
+    } catch (error: any) {
+      alert(error.message || 'Bir hata oluştu');
+      console.error('Kampanya kaydetme hatası:', error);
     }
   };
 

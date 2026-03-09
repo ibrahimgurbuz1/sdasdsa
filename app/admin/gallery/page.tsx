@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAdminAuth } from '../useAdminAuth';
-import { FaTrash, FaUpload, FaImage } from 'react-icons/fa';
+import { FaTrash, FaUpload, FaImage, FaSpinner, FaCloudUploadAlt } from 'react-icons/fa';
 
 type MediaItem = {
   id: string;
@@ -15,6 +15,9 @@ export default function AdminGallery() {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     url: '',
   });
@@ -45,8 +48,91 @@ export default function AdminGallery() {
     setLoading(false);
   }, []);
 
+  const handleFileUpload = async (file: File) => {
+    if (!file) return;
+
+    // Dosya tipini kontrol et
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
+
+    if (!isImage && !isVideo) {
+      alert('Sadece resim ve video dosyaları yüklenebilir');
+      return;
+    }
+
+    // Dosya boyutu kontrolü (50MB)
+    const maxSize = 50 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert('Dosya boyutu maksimum 50MB olabilir');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Yükleme başarısız');
+      }
+
+      const data = await res.json();
+      
+      const newItem: MediaItem = {
+        id: `custom-${Date.now()}`,
+        type: data.type,
+        url: data.url,
+      };
+
+      setMediaItems([newItem, ...mediaItems]);
+      alert('Dosya başarıyla yüklendi!');
+      setShowUploadModal(false);
+    } catch (error: any) {
+      alert(error.message || 'Dosya yüklenemedi');
+      console.error('Yükleme hatası:', error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileUpload(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFileUpload(e.target.files[0]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.url.trim()) {
+      alert('URL boş olamaz');
+      return;
+    }
     const isVideo = formData.url.includes('.mp4') || formData.url.includes('.webm') || formData.url.includes('.mov');
     const newItem: MediaItem = {
       id: `custom-${Date.now()}`,
@@ -143,42 +229,108 @@ export default function AdminGallery() {
       {/* Upload Modal */}
       {showUploadModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 animate-fadeIn">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-800">Yeni Medya Ekle</h2>
               <button
-                onClick={() => setShowUploadModal(false)}
+                onClick={() => {
+                  setShowUploadModal(false);
+                  setFormData({ url: '' });
+                }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
+                disabled={uploading}
               >
                 ✕
               </button>
             </div>
+
+            {/* Drag & Drop Area */}
+            <div
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+              className={`border-3 border-dashed rounded-xl p-12 text-center transition-all duration-300 mb-6 ${
+                dragActive 
+                  ? 'border-[#C5A059] bg-[#C5A059]/10' 
+                  : 'border-gray-300 hover:border-[#C5A059] hover:bg-gray-50'
+              } ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,video/*"
+                onChange={handleFileSelect}
+                className="hidden"
+                disabled={uploading}
+              />
+              
+              {uploading ? (
+                <div className="flex flex-col items-center gap-4">
+                  <FaSpinner className="text-5xl text-[#C5A059] animate-spin" />
+                  <p className="text-lg font-semibold text-gray-700">Yükleniyor...</p>
+                </div>
+              ) : (
+                <>
+                  <FaCloudUploadAlt className="text-6xl text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-700 mb-2">
+                    Dosyayı buraya sürükleyin
+                  </h3>
+                  <p className="text-gray-500 mb-4">veya</p>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="bg-gradient-to-r from-[#C5A059] to-[#ad8345] text-gray-900 px-8 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 inline-flex items-center gap-2"
+                  >
+                    <FaUpload />
+                    Dosya Seç
+                  </button>
+                  <p className="text-xs text-gray-500 mt-4">
+                    Desteklenen formatlar: JPG, PNG, GIF, MP4, WEBM, MOV (Max 50MB)
+                  </p>
+                </>
+              )}
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-4 mb-6">
+              <div className="flex-1 h-px bg-gray-300"></div>
+              <span className="text-sm text-gray-500 font-medium">VEYA URL İLE EKLE</span>
+              <div className="flex-1 h-px bg-gray-300"></div>
+            </div>
+
+            {/* URL Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Medya URL</label>
                 <input
                   type="text"
-                  required
                   value={formData.url}
                   onChange={(e) => setFormData({ ...formData, url: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none bg-white text-black"
                   placeholder="/images/foto.jpg veya /videos/video.mp4"
+                  disabled={uploading}
                 />
                 <p className="text-xs text-gray-500 mt-1">Uzantıya göre otomatik olarak fotoğraf veya video olarak eklenir</p>
               </div>
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowUploadModal(false)}
+                  onClick={() => {
+                    setShowUploadModal(false);
+                    setFormData({ url: '' });
+                  }}
                   className="flex-1 px-6 py-3 border border-gray-300 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                  disabled={uploading}
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-[#C5A059] to-[#ad8345] text-gray-900 rounded-xl font-semibold hover:shadow-lg transition-all duration-300"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-[#C5A059] to-[#ad8345] text-gray-900 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={uploading}
                 >
-                  Ekle
+                  URL ile Ekle
                 </button>
               </div>
             </form>
