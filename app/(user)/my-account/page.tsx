@@ -3,6 +3,7 @@
 import { FaCalendarAlt, FaUser, FaHistory, FaCog, FaHeart, FaSignOutAlt } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatPhoneInput } from '@/lib/validation';
 
 export default function MyAccount() {
   const router = useRouter();
@@ -276,6 +277,11 @@ export default function MyAccount() {
                     <input
                       type="tel"
                       defaultValue={user.phone}
+                       inputMode="numeric"
+                       maxLength={14}
+                       onChange={(e) => {
+                         e.currentTarget.value = formatPhoneInput(e.currentTarget.value);
+                       }}
                       className="w-full px-4 py-3 bg-[#0a0a0a] border-2 border-[#C5A059]/30 rounded-xl focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none text-white placeholder-gray-500"
                     />
                   </div>

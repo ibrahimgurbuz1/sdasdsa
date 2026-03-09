@@ -3,6 +3,7 @@
 import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaClock, FaInstagram, FaFacebook, FaWhatsapp } from 'react-icons/fa';
 import { useState } from 'react';
 import { useSiteSettings } from '@/lib/SiteSettingsContext';
+import { formatPhoneInput, onlyDigits } from '@/lib/validation';
 
 export default function ContactPage() {
   const { settings } = useSiteSettings();
@@ -16,6 +17,10 @@ export default function ContactPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (onlyDigits(formData.phone).length < 10) {
+      alert('Geçerli bir telefon numarası giriniz.');
+      return;
+    }
     console.log('Form gönderildi:', formData);
     alert('Mesajınız alındı! En kısa sürede size dönüş yapacağız.');
     setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
@@ -178,7 +183,9 @@ export default function ContactPage() {
                   <input
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, phone: formatPhoneInput(e.target.value) })}
+                    inputMode="numeric"
+                    maxLength={14}
                     required
                     placeholder="0500 000 00 00"
                     className="w-full px-4 py-3 bg-[#0a0a0a] border-2 border-[#C5A059]/30 rounded-xl focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none text-white placeholder-gray-500"

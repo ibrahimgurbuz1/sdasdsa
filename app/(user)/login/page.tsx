@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { FaUser, FaLock, FaEnvelope, FaArrowLeft, FaUserPlus } from 'react-icons/fa';
+import { formatPhoneInput, onlyDigits } from '@/lib/validation';
 
 export default function UserLogin() {
   const router = useRouter();
@@ -42,6 +43,11 @@ export default function UserLogin() {
       } else {
         // Register
         if (formData.name && formData.email && formData.phone && formData.password) {
+          if (onlyDigits(formData.phone).length < 10) {
+            setError('Geçerli bir telefon numarası girin!');
+            setLoading(false);
+            return;
+          }
           localStorage.setItem('userAuth', 'true');
           localStorage.setItem('user', JSON.stringify({
             name: formData.name,
@@ -161,7 +167,9 @@ export default function UserLogin() {
                   <input
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, phone: formatPhoneInput(e.target.value) })}
+                    inputMode="numeric"
+                    maxLength={14}
                     className="w-full pl-12 pr-4 py-3 bg-[#0a0a0a] border border-[#C5A059]/30 rounded-xl focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] transition-all text-white placeholder-gray-500"
                     placeholder="0555 123 4567"
                     required={!isLogin}

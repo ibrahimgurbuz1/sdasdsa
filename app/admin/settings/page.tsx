@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAdminAuth } from '../useAdminAuth';
 import { FaSave, FaBell, FaClock, FaMoneyBillWave, FaPalette, FaGlobe, FaInstagram, FaFacebook, FaWhatsapp, FaSearch, FaSpinner, FaCheck } from 'react-icons/fa';
+import { formatPhoneInput, onlyDigits } from '@/lib/validation';
 
 interface Settings {
   // Genel Bilgiler
@@ -218,7 +219,9 @@ export default function Settings() {
                 <input
                   type="tel"
                   value={settings.phone}
-                  onChange={(e) => updateSetting('phone', e.target.value)}
+                  onChange={(e) => updateSetting('phone', formatPhoneInput(e.target.value))}
+                  inputMode="numeric"
+                  maxLength={14}
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-transparent outline-none text-black"
                 />
               </div>
@@ -337,7 +340,9 @@ export default function Settings() {
                   <input
                     type="tel"
                     value={settings.whatsapp}
-                    onChange={(e) => updateSetting('whatsapp', e.target.value)}
+                    onChange={(e) => updateSetting('whatsapp', onlyDigits(e.target.value, 12))}
+                    inputMode="numeric"
+                    maxLength={12}
                     placeholder="905551234567"
                     className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-transparent outline-none text-black"
                   />

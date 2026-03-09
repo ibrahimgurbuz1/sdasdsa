@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAdminAuth } from '../useAdminAuth';
 import { FaUserPlus, FaStar, FaCalendarCheck, FaMoneyBillWave, FaPhone, FaEnvelope, FaSync, FaTimes, FaTrash, FaEdit } from 'react-icons/fa';
+import { formatPhoneInput, onlyDigits } from '@/lib/validation';
 
 type StaffMember = {
   id: string;
@@ -89,6 +90,10 @@ export default function Staff() {
     }
     if (!formData.phone.trim()) {
       alert('Telefon numarası boş olamaz');
+      return;
+    }
+    if (onlyDigits(formData.phone).length < 10) {
+      alert('Geçerli bir telefon numarası giriniz');
       return;
     }
     if (!formData.specialty.trim()) {
@@ -494,7 +499,9 @@ export default function Staff() {
                     type="tel"
                     required
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, phone: formatPhoneInput(e.target.value) })}
+                    inputMode="numeric"
+                    maxLength={14}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none bg-white text-black"
                     placeholder="0500 000 00 00"
                   />

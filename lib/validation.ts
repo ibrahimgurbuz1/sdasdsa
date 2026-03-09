@@ -23,6 +23,20 @@ export function validatePhone(phone: string): boolean {
   return phoneRegex.test(phone);
 }
 
+export function onlyDigits(input: string, maxLength = 11): string {
+  return input.replace(/\D/g, '').slice(0, maxLength);
+}
+
+export function formatPhoneInput(input: string): string {
+  const digits = onlyDigits(input, 11);
+
+  if (digits.length <= 4) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 4)} ${digits.slice(4)}`;
+  if (digits.length <= 9) return `${digits.slice(0, 4)} ${digits.slice(4, 7)} ${digits.slice(7)}`;
+
+  return `${digits.slice(0, 4)} ${digits.slice(4, 7)} ${digits.slice(7, 9)} ${digits.slice(9)}`;
+}
+
 export function sanitizeNumber(input: any): number | null {
   const num = Number(input);
   return isNaN(num) ? null : num;

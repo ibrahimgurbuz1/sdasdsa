@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { FaCalendarAlt, FaClock, FaUser, FaPhone, FaEnvelope, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
+import { formatPhoneInput, onlyDigits } from '@/lib/validation';
 
 interface Service {
   id: string;
@@ -128,6 +129,10 @@ export default function BookingPage() {
       // Randevu oluşturma işlemi - API çağrısı (Artık 3. adımdan 4. adıma geçerken yapıyoruz)
       setLoading(true);
       try {
+        if (onlyDigits(bookingData.phone).length < 10) {
+          throw new Error('Geçerli bir telefon numarası giriniz');
+        }
+
         const response = await fetch('/api/appointments', {
           method: 'POST',
           headers: {
@@ -429,7 +434,9 @@ export default function BookingPage() {
                     <input
                       type="tel"
                       value={bookingData.phone}
-                      onChange={(e) => setBookingData({ ...bookingData, phone: e.target.value })}
+                        onChange={(e) => setBookingData({ ...bookingData, phone: formatPhoneInput(e.target.value) })}
+                        inputMode="numeric"
+                        maxLength={14}
                       required
                       placeholder="0500 000 00 00"
                       className="w-full px-4 py-3 bg-[#0a0a0a] border-2 border-[#C5A059]/30 rounded-xl focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none text-white placeholder-gray-500"
