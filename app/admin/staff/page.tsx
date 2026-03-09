@@ -125,7 +125,12 @@ export default function Staff() {
         throw new Error(err.error || 'İşlem başarısız');
       }
 
-      await fetchStaff();
+      const newStaff = await res.json();
+      if (editingStaff) {
+        setStaff(prev => prev.map(s => s.id === editingStaff.id ? newStaff : s));
+      } else {
+        setStaff(prev => [newStaff, ...prev]);
+      }
       alert(editingStaff ? 'Personel başarıyla güncellendi!' : 'Personel başarıyla eklendi!');
       setShowNewStaff(false);
       setEditingStaff(null);
@@ -157,16 +162,22 @@ export default function Staff() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Bu personeli silmek istediğinizden emin misiniz?')) return;
+    
+    // Hemen UI'dan kaldır (optimistic update)
+    const updatedStaff = staff.filter(s => s.id !== id);
+    setStaff(updatedStaff);
+    setSelectedStaff(null);
+    
     try {
       const res = await fetch(`/api/staff?id=${id}`, { method: 'DELETE' });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error);
       }
-      await fetchStaff();
-      setSelectedStaff(null);
       alert('Personel başarıyla silindi!');
     } catch (error: any) {
+      // Hata olursa önceki duruma döndür
+      await fetchStaff();
       alert(error.message || 'Personel silinemedi');
     }
   };

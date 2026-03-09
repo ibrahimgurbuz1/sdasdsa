@@ -90,7 +90,12 @@ export default function Campaigns() {
         throw new Error(err.error || 'İşlem başarısız');
       }
 
-      await fetchCampaigns();
+      const newCampaign = await res.json();
+      if (editingCampaign) {
+        setCampaigns(prev => prev.map(c => c.id === editingCampaign.id ? newCampaign : c));
+      } else {
+        setCampaigns(prev => [newCampaign, ...prev]);
+      }
       alert(editingCampaign ? 'Kampanya başarıyla güncellendi!' : 'Kampanya başarıyla eklendi!');
       setShowNewCampaign(false);
       setEditingCampaign(null);
@@ -104,15 +109,20 @@ export default function Campaigns() {
   const handleDelete = async (id: string) => {
     if (!confirm('Bu kampanyayı silmek istediğinize emin misiniz?')) return;
     
+    // Hemen UI'dan kaldır (optimistic update)
+    const updatedCampaigns = campaigns.filter(c => c.id !== id);
+    setCampaigns(updatedCampaigns);
+    
     try {
       const res = await fetch(`/api/campaigns?id=${id}`, { method: 'DELETE' });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || 'Silme başarısız');
       }
-      await fetchCampaigns();
       alert('Kampanya başarıyla silindi!');
     } catch (error: any) {
+      // Hata olursa önceki duruma döndür
+      await fetchCampaigns();
       alert(error.message || 'Kampanya silinemedi');
       console.error('Kampanya silme hatası:', error);
     }

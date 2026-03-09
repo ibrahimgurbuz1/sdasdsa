@@ -118,7 +118,12 @@ export default function Inventory() {
         throw new Error(err.error || 'İşlem başarısız');
       }
 
-      await fetchInventory();
+      const newProduct = await res.json();
+      if (editingProduct) {
+        setProducts(prev => prev.map(p => p.id === editingProduct.id ? newProduct : p));
+      } else {
+        setProducts(prev => [newProduct, ...prev]);
+      }
       alert(editingProduct ? 'Ürün başarıyla güncellendi!' : 'Ürün başarıyla eklendi!');
       setShowNewProduct(false);
       setEditingProduct(null);
@@ -132,15 +137,20 @@ export default function Inventory() {
   const handleDelete = async (id: string) => {
     if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return;
     
+    // Hemen UI'dan kaldır (optimistic update)
+    const updatedProducts = products.filter(p => p.id !== id);
+    setProducts(updatedProducts);
+    
     try {
       const res = await fetch(`/api/inventory?id=${id}`, { method: 'DELETE' });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || 'Silme başarısız');
       }
-      await fetchInventory();
       alert('Ürün başarıyla silindi!');
     } catch (error: any) {
+      // Hata olursa önceki duruma döndür
+      await fetchInventory();
       alert(error.message || 'Ürün silinemedi');
       console.error('Ürün silme hatası:', error);
     }

@@ -102,7 +102,8 @@ export default function Services() {
         throw new Error(err.error || 'İşlem başarısız');
       }
 
-      await fetchServices();
+      const newService = await res.json();
+      setServices(prev => [newService, ...prev]);
       alert(editingService ? 'Hizmet başarıyla güncellendi!' : 'Hizmet başarıyla eklendi!');
       setShowNewService(false);
       setEditingService(null);
@@ -127,15 +128,21 @@ export default function Services() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Bu hizmeti silmek istediğinizden emin misiniz?')) return;
+    
+    // Hemen UI'dan kaldır (optimistic update)
+    const updatedServices = services.filter(s => s.id !== id);
+    setServices(updatedServices);
+    
     try {
       const res = await fetch(`/api/services?id=${id}`, { method: 'DELETE' });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error);
       }
-      await fetchServices();
       alert('Hizmet başarıyla silindi!');
     } catch (error: any) {
+      // Hata olursa önceki duruma döndür
+      await fetchServices();
       alert(error.message || 'Hizmet silinemedi');
     }
   };
