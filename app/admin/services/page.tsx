@@ -32,7 +32,7 @@ export default function Services() {
 
   const fetchServices = async () => {
     try {
-      const res = await fetch('/api/services');
+      const res = await fetch('/api/services', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setServices(data);

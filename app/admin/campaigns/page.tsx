@@ -32,7 +32,7 @@ export default function Campaigns() {
 
   const fetchCampaigns = async () => {
     try {
-      const res = await fetch('/api/campaigns');
+      const res = await fetch('/api/campaigns', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setCampaigns(data);

@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+type GalleryPayload = {
+  title?: string;
+  category?: string;
+  imageUrl?: string;
+  type?: 'image' | 'video';
+  url?: string;
+};
+
 export async function GET() {
   try {
     const items = await prisma.galleryItem.findMany({
@@ -9,44 +20,45 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(items);
+    return NextResponse.json(items, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      },
+    });
   } catch (error) {
-    console.error('Galeri getirme hatası:', error);
-    return NextResponse.json(
-      { error: 'Galeri getirilemedi' },
-      { status: 500 }
-    );
+    console.error('Galeri getirme hatasi:', error);
+    return NextResponse.json({ error: 'Galeri getirilemedi' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { title, category, imageUrl } = body;
+    const body = (await request.json()) as GalleryPayload;
 
-    // Zorunlu alanlar
-    if (!title?.trim() || !category?.trim() || !imageUrl?.trim()) {
-      return NextResponse.json(
-        { error: 'Başlık, kategori ve resim URL zorunludur' },
-        { status: 400 }
-      );
+    const resolvedType = body.type || (body.category === 'video' ? 'video' : 'image');
+    const resolvedUrl = (body.url || body.imageUrl || '').trim();
+    const resolvedTitle = (body.title || 'Yeni Medya').trim();
+
+    if (!resolvedUrl) {
+      return NextResponse.json({ error: 'Medya URL zorunludur' }, { status: 400 });
+    }
+
+    if (resolvedType !== 'image' && resolvedType !== 'video') {
+      return NextResponse.json({ error: 'Medya tipi image veya video olmalidir' }, { status: 400 });
     }
 
     const item = await prisma.galleryItem.create({
       data: {
-        title: title.trim(),
-        category: category.trim(),
-        imageUrl: imageUrl.trim(),
+        title: resolvedTitle,
+        category: resolvedType,
+        imageUrl: resolvedUrl,
       },
     });
 
     return NextResponse.json(item, { status: 201 });
   } catch (error) {
-    console.error('Galeri öğesi oluşturma hatası:', error);
-    return NextResponse.json(
-      { error: 'Galeri öğesi oluşturulamadı' },
-      { status: 500 }
-    );
+    console.error('Galeri ogesi olusturma hatasi:', error);
+    return NextResponse.json({ error: 'Galeri ogesi olusturulamadi' }, { status: 500 });
   }
 }
 
@@ -59,16 +71,11 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID gerekli' }, { status: 400 });
     }
 
-    await prisma.galleryItem.delete({
-      where: { id },
-    });
+    await prisma.galleryItem.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Galeri öğesi silme hatası:', error);
-    return NextResponse.json(
-      { error: 'Galeri öğesi silinemedi' },
-      { status: 500 }
-    );
+    console.error('Galeri ogesi silme hatasi:', error);
+    return NextResponse.json({ error: 'Galeri ogesi silinemedi' }, { status: 500 });
   }
 }

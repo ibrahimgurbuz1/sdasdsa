@@ -43,7 +43,7 @@ export default function Inventory() {
 
   const fetchInventory = async () => {
     try {
-      const res = await fetch('/api/inventory');
+      const res = await fetch('/api/inventory', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setProducts(data.products);

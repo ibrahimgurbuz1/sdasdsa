@@ -43,8 +43,8 @@ export default function BookingPage() {
     const fetchData = async () => {
       try {
         const [servicesRes, staffRes] = await Promise.all([
-          fetch('/api/services'),
-          fetch('/api/staff'),
+          fetch('/api/services', { cache: 'no-store' }),
+          fetch('/api/staff', { cache: 'no-store' }),
         ]);
 
         const servicesData = await servicesRes.json();
@@ -65,7 +65,7 @@ export default function BookingPage() {
     if (bookingData.staff && bookingData.date) {
       const fetchAppointments = async () => {
         try {
-          const res = await fetch(`/api/appointments?staffId=${bookingData.staff}&date=${bookingData.date}`);
+          const res = await fetch(`/api/appointments?staffId=${bookingData.staff}&date=${bookingData.date}`, { cache: 'no-store' });
           const data = await res.json();
           setExistingAppointments(data);
         } catch (error) {

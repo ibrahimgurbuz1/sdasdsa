@@ -46,7 +46,7 @@ export default function Staff() {
 
   const fetchStaff = async () => {
     try {
-      const res = await fetch('/api/staff');
+      const res = await fetch('/api/staff', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setStaff(data);
