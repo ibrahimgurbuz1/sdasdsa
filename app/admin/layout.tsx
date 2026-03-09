@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { FaHome, FaCalendarAlt, FaCut, FaUsers, FaUserTie, FaCog, FaChartLine, FaBars, FaTimes, FaImages, FaTags, FaBox, FaMoneyBillWave, FaSignOutAlt, FaUserCircle } from 'react-icons/fa';
+import { FaHome, FaCalendarAlt, FaCut, FaUsers, FaUserTie, FaCog, FaChartLine, FaBars, FaTimes, FaImages, FaBox, FaMoneyBillWave, FaSignOutAlt, FaUserCircle } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
 
 export default function AdminLayout({
@@ -71,7 +71,6 @@ export default function AdminLayout({
     { name: 'Müşteriler', href: '/admin/customers', icon: FaUsers },
     { name: 'Personel', href: '/admin/staff', icon: FaUserTie },
     { name: 'Galeri', href: '/admin/gallery', icon: FaImages },
-    { name: 'Kampanyalar', href: '/admin/campaigns', icon: FaTags },
     { name: 'Envanter', href: '/admin/inventory', icon: FaBox },
     { name: 'Finans', href: '/admin/finance', icon: FaMoneyBillWave },
     { name: 'Ayarlar', href: '/admin/settings', icon: FaCog },
