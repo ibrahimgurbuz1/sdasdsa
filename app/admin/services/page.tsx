@@ -29,6 +29,7 @@ export default function Services() {
     price: '',
     description: '',
   });
+  const [newCategory, setNewCategory] = useState('');
 
   const fetchServices = async () => {
     try {
@@ -58,6 +59,30 @@ export default function Services() {
       price: '',
       description: '',
     });
+    setNewCategory('');
+  };
+
+  const addCategory = () => {
+    const nextCategory = newCategory.trim();
+    if (!nextCategory) {
+      alert('Kategori adı boş olamaz');
+      return;
+    }
+
+    const hasCategory = allFormCategories.some(
+      (cat) => cat.toLowerCase() === nextCategory.toLowerCase()
+    );
+
+    if (hasCategory) {
+      alert('Bu kategori zaten mevcut');
+      setFormData({ ...formData, category: allFormCategories.find(cat => cat.toLowerCase() === nextCategory.toLowerCase()) || formData.category });
+      setNewCategory('');
+      return;
+    }
+
+    setFormData({ ...formData, category: nextCategory });
+    setNewCategory('');
+    alert('Kategori eklendi, hizmeti kaydederek kalıcı hale getirebilirsiniz.');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -149,6 +174,7 @@ export default function Services() {
 
   // Benzersiz kategorileri al (mevcut hizmetlerden + sabit listeden)
   const existingCategories = [...new Set(services.map(s => s.category))];
+  const allFormCategories = [...new Set([...CATEGORIES, ...existingCategories])];
   const allFilterCategories = ['Tümü', ...existingCategories];
 
   const [selectedCategory, setSelectedCategory] = useState('Tümü');
@@ -319,10 +345,26 @@ export default function Services() {
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none bg-white text-black cursor-pointer"
                   >
-                    {CATEGORIES.map(cat => (
+                    {allFormCategories.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>
+                  <div className="flex gap-2 mt-2">
+                    <input
+                      type="text"
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none bg-white text-black"
+                      placeholder="Yeni kategori ekle"
+                    />
+                    <button
+                      type="button"
+                      onClick={addCategory}
+                      className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 font-semibold"
+                    >
+                      Ekle
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Süre (dakika)</label>
