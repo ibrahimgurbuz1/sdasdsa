@@ -21,12 +21,49 @@ interface Staff {
   categories: string;
 }
 
+interface SiteSettings {
+  workdayStart?: string;
+  workdayEnd?: string;
+  weekendStart?: string;
+  weekendEnd?: string;
+}
+
+const SLOT_INTERVAL_MINUTES = 30;
+
+const parseDurationMinutes = (duration: string | number | undefined): number => {
+  if (typeof duration === 'number') return duration;
+  if (!duration) return 30;
+  const parsed = parseInt(String(duration), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 30;
+};
+
+const timeToMinutes = (time: string): number => {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+};
+
+const minutesToTime = (total: number): string => {
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+};
+
+const isWeekendDate = (date: string): boolean => {
+  const day = new Date(`${date}T00:00:00`).getDay();
+  return day === 0 || day === 6;
+};
+
+const rangesOverlap = (aStart: number, aEnd: number, bStart: number, bEnd: number): boolean => {
+  return aStart < bEnd && bStart < aEnd;
+};
+
 export default function BookingPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [services, setServices] = useState<Service[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [existingAppointments, setExistingAppointments] = useState<any[]>([]);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>({});
   
   const [bookingData, setBookingData] = useState({
     service: '',
@@ -43,16 +80,19 @@ export default function BookingPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [servicesRes, staffRes] = await Promise.all([
+        const [servicesRes, staffRes, settingsRes] = await Promise.all([
           fetch('/api/services', { cache: 'no-store' }),
           fetch('/api/staff', { cache: 'no-store' }),
+          fetch('/api/settings', { cache: 'no-store' }),
         ]);
 
         const servicesData = await servicesRes.json();
         const staffData = await staffRes.json();
+        const settingsData = await settingsRes.json();
 
         setServices(servicesData);
         setStaff(staffData);
+        setSiteSettings(settingsData || {});
       } catch (error) {
         console.error('Veri yükleme hatası:', error);
       }
@@ -78,12 +118,6 @@ export default function BookingPage() {
     }
   }, [bookingData.staff, bookingData.date]);
 
-  const allTimes = [
-    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-    '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
-    '16:00', '16:30', '17:00', '17:30', '18:00'
-  ];
-
   // Seçilen hizmete göre uygun uzmanları filtrele
   const availableStaff = useMemo(() => {
     if (!bookingData.service) return [];
@@ -103,14 +137,62 @@ export default function BookingPage() {
 
   // Seçilen uzman, tarih ve saate göre uygun saatleri filtrele
   const availableTimes = useMemo(() => {
-    if (!bookingData.staff || !bookingData.date) return allTimes;
+    if (!bookingData.staff || !bookingData.date || !bookingData.service) return [];
 
-    // Bu uzmanın bu tarihteki dolu saatlerini bul
-    const bookedTimes = existingAppointments.map(apt => apt.time);
+    const selectedService = services.find(s => s.id === bookingData.service);
+    const selectedDuration = parseDurationMinutes(selectedService?.duration);
 
-    // Dolu olmayan saatleri döndür
-    return allTimes.filter(time => !bookedTimes.includes(time));
-  }, [bookingData.staff, bookingData.date, existingAppointments]);
+    const weekend = isWeekendDate(bookingData.date);
+    const startTime = weekend
+      ? (siteSettings.weekendStart || '10:00')
+      : (siteSettings.workdayStart || '09:00');
+    const endTime = weekend
+      ? (siteSettings.weekendEnd || '18:00')
+      : (siteSettings.workdayEnd || '19:00');
+
+    const startMinutes = timeToMinutes(startTime);
+    const endMinutes = timeToMinutes(endTime);
+
+    const now = new Date();
+    const selectedDateObj = new Date(`${bookingData.date}T00:00:00`);
+    const isToday =
+      selectedDateObj.getFullYear() === now.getFullYear() &&
+      selectedDateObj.getMonth() === now.getMonth() &&
+      selectedDateObj.getDate() === now.getDate();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const appointmentBlocks = existingAppointments
+      .filter((apt) => apt.status !== 'cancelled')
+      .map((apt) => {
+        const blockStart = timeToMinutes(apt.time);
+        const blockDuration = parseDurationMinutes(apt.service?.duration);
+        return { start: blockStart, end: blockStart + blockDuration };
+      });
+
+    const slots: string[] = [];
+    for (let slotStart = startMinutes; slotStart + selectedDuration <= endMinutes; slotStart += SLOT_INTERVAL_MINUTES) {
+      if (isToday && slotStart <= nowMinutes) {
+        continue;
+      }
+
+      const slotEnd = slotStart + selectedDuration;
+      const hasConflict = appointmentBlocks.some((block) =>
+        rangesOverlap(slotStart, slotEnd, block.start, block.end)
+      );
+
+      if (!hasConflict) {
+        slots.push(minutesToTime(slotStart));
+      }
+    }
+
+    return slots;
+  }, [bookingData.staff, bookingData.date, bookingData.service, existingAppointments, services, siteSettings]);
+
+  useEffect(() => {
+    if (bookingData.time && !availableTimes.includes(bookingData.time)) {
+      setBookingData(prev => ({ ...prev, time: '' }));
+    }
+  }, [availableTimes, bookingData.time]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

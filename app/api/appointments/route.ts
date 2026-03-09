@@ -50,21 +50,58 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { userId, staffId, serviceId, date, time, customerName, customerPhone, customerEmail, notes } = body;
 
+    const selectedService = await prisma.service.findUnique({
+      where: { id: serviceId },
+      select: { duration: true },
+    });
+
+    if (!selectedService) {
+      return NextResponse.json(
+        { error: 'Hizmet bulunamadı' },
+        { status: 400 }
+      );
+    }
+
+    const toMinutes = (value: string) => {
+      const [h, m] = value.split(':').map(Number);
+      return h * 60 + m;
+    };
+
+    const parseDuration = (value: string) => {
+      const parsed = parseInt(value, 10);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : 30;
+    };
+
+    const requestedStart = toMinutes(time);
+    const requestedEnd = requestedStart + parseDuration(String(selectedService.duration));
+
     // Çakışma kontrolü
-    const existingAppointment = await prisma.appointment.findFirst({
+    const existingAppointments = await prisma.appointment.findMany({
       where: {
         staffId,
         date,
-        time,
         status: {
           not: 'cancelled',
         },
       },
+      include: {
+        service: {
+          select: {
+            duration: true,
+          },
+        },
+      },
     });
 
-    if (existingAppointment) {
+    const hasConflict = existingAppointments.some((appointment) => {
+      const existingStart = toMinutes(appointment.time);
+      const existingEnd = existingStart + parseDuration(String(appointment.service?.duration || '30'));
+      return requestedStart < existingEnd && existingStart < requestedEnd;
+    });
+
+    if (hasConflict) {
       return NextResponse.json(
-        { error: 'Bu saat için zaten bir randevu var' },
+        { error: 'Seçilen saat aralığı dolu' },
         { status: 400 }
       );
     }
