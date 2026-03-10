@@ -162,7 +162,7 @@ export default function BookingPage() {
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
     const appointmentBlocks = existingAppointments
-      .filter((apt) => apt.status !== 'cancelled')
+      .filter((apt) => apt.status !== 'cancelled' && apt.status !== 'rejected')
       .map((apt) => {
         const blockStart = timeToMinutes(apt.time);
         const blockDuration = parseDurationMinutes(apt.service?.duration);

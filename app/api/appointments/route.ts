@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
           staffId,
           date,
           status: {
-            not: 'cancelled',
+            notIn: ['cancelled', 'rejected'],
           },
         },
         select: {
