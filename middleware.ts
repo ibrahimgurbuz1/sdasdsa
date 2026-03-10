@@ -1,18 +1,83 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { verifyAdminSessionTokenEdge } from '@/lib/adminAuthEdge';
 
-export function middleware(request: NextRequest) {
+const ADMIN_AUTH_SECRET = process.env.ADMIN_AUTH_SECRET || process.env.NEXTAUTH_SECRET || 'dev-admin-secret-change-me';
+
+function isProtectedApiRoute(pathname: string, method: string): boolean {
+  const alwaysProtected = [
+    '/api/admin/dashboard',
+    '/api/customers',
+    '/api/finance',
+  ];
+
+  if (alwaysProtected.includes(pathname)) {
+    return true;
+  }
+
+  const mutationProtected = [
+    '/api/settings',
+    '/api/staff',
+    '/api/services',
+    '/api/inventory',
+    '/api/campaigns',
+    '/api/gallery',
+    '/api/appointments',
+  ];
+
+  if (mutationProtected.includes(pathname) && method !== 'GET' && method !== 'POST') {
+    return true;
+  }
+
+  if (pathname === '/api/settings' && method !== 'GET') {
+    return true;
+  }
+
+  if (pathname === '/api/staff' && method !== 'GET') {
+    return true;
+  }
+
+  if (pathname === '/api/services' && method !== 'GET') {
+    return true;
+  }
+
+  if (pathname === '/api/inventory' && method !== 'GET') {
+    return true;
+  }
+
+  if (pathname === '/api/campaigns' && method !== 'GET') {
+    return true;
+  }
+
+  if (pathname === '/api/gallery' && method !== 'GET') {
+    return true;
+  }
+
+  if (pathname === '/api/appointments' && method === 'PATCH') {
+    return true;
+  }
+
+  return false;
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const method = request.method;
   
   let response: NextResponse;
+  const isAdminPage = pathname.startsWith('/admin') && pathname !== '/admin/login';
+  const isProtectedApi = pathname.startsWith('/api') && isProtectedApiRoute(pathname, method);
+  const needsAdminAuth = isAdminPage || isProtectedApi;
 
-  // Admin routes (login hariç)
-  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
-    // Check for auth cookie
-    const authCookie = request.cookies.get('adminAuth');
-    
-    if (!authCookie) {
-      // Redirect to login
+  if (needsAdminAuth) {
+    const token = request.cookies.get('adminAuth')?.value;
+    const session = await verifyAdminSessionTokenEdge(token, ADMIN_AUTH_SECRET);
+
+    if (!session) {
+      if (isProtectedApi) {
+        return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 });
+      }
+
       const loginUrl = new URL('/admin/login', request.url);
       response = NextResponse.redirect(loginUrl);
     } else {
@@ -60,5 +125,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/api/:path*'],
 };

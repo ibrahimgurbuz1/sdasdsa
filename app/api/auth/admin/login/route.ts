@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { loginRateLimit } from '@/lib/rateLimit';
 import { sanitizeEmail, validateEmail } from '@/lib/validation';
+import { createAdminSessionToken } from '@/lib/adminAuth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,8 +69,14 @@ export async function POST(request: NextRequest) {
       user: adminWithoutPassword,
     });
 
-    // Set HTTP-only cookie for server-side auth
-    response.cookies.set('adminAuth', 'true', {
+    const token = createAdminSessionToken({
+      adminId: admin.id,
+      email: admin.email,
+      role: admin.role,
+    });
+
+    // Set signed HTTP-only cookie for server-side auth
+    response.cookies.set('adminAuth', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

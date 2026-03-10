@@ -20,18 +20,43 @@ export default function AdminLayout({
   useEffect(() => {
     // Login sayfasında değilsek auth kontrolü yap
     if (pathname !== '/admin/login') {
-      const isAuth = localStorage.getItem('adminAuth');
-      if (!isAuth) {
-        router.push('/admin/login');
-        return;
-      } else {
-        const user = localStorage.getItem('adminUser');
-        if (user) {
-          setAdminUser(JSON.parse(user));
+      let mounted = true;
+
+      const checkSession = async () => {
+        try {
+          const response = await fetch('/api/auth/admin/session', {
+            method: 'GET',
+            credentials: 'include',
+            cache: 'no-store',
+          });
+
+          if (!response.ok) {
+            if (mounted) {
+              router.replace('/admin/login');
+            }
+            return;
+          }
+
+          const data = await response.json();
+          if (mounted) {
+            setAdminUser(data.user || null);
+            setIsChecking(false);
+          }
+        } catch {
+          if (mounted) {
+            router.replace('/admin/login');
+          }
         }
-      }
+      };
+
+      checkSession();
+
+      return () => {
+        mounted = false;
+      };
+    } else {
+      setIsChecking(false);
     }
-    setIsChecking(false);
   }, [pathname, router]);
 
   const handleLogout = async () => {
@@ -40,8 +65,6 @@ export default function AdminLayout({
     } catch (error) {
       console.error('Logout error:', error);
     }
-    localStorage.removeItem('adminAuth');
-    localStorage.removeItem('adminUser');
     router.push('/admin/login');
   };
 

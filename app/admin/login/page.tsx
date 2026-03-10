@@ -35,8 +35,6 @@ export default function AdminLoginPage() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        localStorage.setItem('adminAuth', 'true');
-        localStorage.setItem('adminUser', JSON.stringify(data.user));
         router.push('/admin/dashboard');
       } else {
         setError(data.error || 'Giriş yapılamadı!');

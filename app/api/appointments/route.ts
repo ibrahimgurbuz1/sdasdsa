@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendAppointmentConfirmationEmail, sendAppointmentReceivedEmail } from '@/lib/email';
+import { getAdminSessionFromRequest } from '@/lib/adminAuth';
+import { strictApiRateLimit } from '@/lib/rateLimit';
+import { sanitizeString, sanitizeEmail, validateEmail, validatePhone } from '@/lib/validation';
 
 // Tüm randevuları getir veya yeni randevu oluştur
 export async function GET(request: NextRequest) {
@@ -9,11 +12,45 @@ export async function GET(request: NextRequest) {
     const staffId = searchParams.get('staffId');
     const date = searchParams.get('date');
     const email = searchParams.get('email');
+    const session = getAdminSessionFromRequest(request);
+
+    // Public access: only availability lookup for booking flow.
+    if (!session) {
+      if (!staffId || !date) {
+        return NextResponse.json(
+          { error: 'Bu endpoint için yetki gerekli' },
+          { status: 401 }
+        );
+      }
+
+      const publicAppointments = await prisma.appointment.findMany({
+        where: {
+          staffId,
+          date,
+          status: {
+            not: 'cancelled',
+          },
+        },
+        select: {
+          id: true,
+          time: true,
+          status: true,
+          service: {
+            select: {
+              duration: true,
+            },
+          },
+        },
+        orderBy: [{ time: 'asc' }],
+      });
+
+      return NextResponse.json(publicAppointments);
+    }
 
     const where: any = {};
     if (staffId) where.staffId = staffId;
     if (date) where.date = date;
-    if (email) where.customerEmail = email;
+    if (email) where.customerEmail = sanitizeEmail(email);
 
     const appointments = await prisma.appointment.findMany({
       where,
@@ -47,8 +84,45 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+               request.headers.get('x-real-ip') ||
+               'unknown';
+    const rateLimitResult = await strictApiRateLimit.check(`appointment:${ip}`);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Çok fazla randevu denemesi yapıldı. Lütfen biraz sonra tekrar deneyin.' },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { userId, staffId, serviceId, date, time, customerName, customerPhone, customerEmail, notes } = body;
+
+    if (!staffId || !serviceId || !date || !time || !customerName || !customerPhone || !customerEmail) {
+      return NextResponse.json(
+        { error: 'Personel, hizmet, tarih, saat, ad, telefon ve email zorunludur' },
+        { status: 400 }
+      );
+    }
+
+    const sanitizedName = sanitizeString(String(customerName));
+    const sanitizedPhone = sanitizeString(String(customerPhone));
+    const sanitizedEmail = sanitizeEmail(String(customerEmail));
+    const sanitizedNotes = notes ? sanitizeString(String(notes)) : '';
+
+    if (!validateEmail(sanitizedEmail)) {
+      return NextResponse.json(
+        { error: 'Geçerli bir email adresi giriniz' },
+        { status: 400 }
+      );
+    }
+
+    if (!validatePhone(sanitizedPhone)) {
+      return NextResponse.json(
+        { error: 'Geçerli bir telefon numarası giriniz' },
+        { status: 400 }
+      );
+    }
 
     const selectedService = await prisma.service.findUnique({
       where: { id: serviceId },
@@ -114,10 +188,10 @@ export async function POST(request: NextRequest) {
         serviceId,
         date,
         time,
-        customerName,
-        customerPhone,
-        customerEmail,
-        notes,
+        customerName: sanitizedName,
+        customerPhone: sanitizedPhone,
+        customerEmail: sanitizedEmail,
+        notes: sanitizedNotes,
         status: 'pending',
       },
       include: {
@@ -128,7 +202,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Randevu işleme alındı e-postası gönder
-    if (customerEmail) {
+    if (sanitizedEmail) {
       const formattedDate = new Date(date).toLocaleDateString('tr-TR', {
         weekday: 'long',
         year: 'numeric',
@@ -137,8 +211,8 @@ export async function POST(request: NextRequest) {
       });
 
       sendAppointmentReceivedEmail({
-        customerName: customerName || 'Değerli Müşterimiz',
-        customerEmail,
+        customerName: sanitizedName || 'Değerli Müşterimiz',
+        customerEmail: sanitizedEmail,
         date: formattedDate,
         time,
         serviceName: appointment.service?.name || 'Belirtilmedi',
@@ -158,6 +232,11 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    const session = getAdminSessionFromRequest(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { id, status } = body;
 
@@ -180,14 +259,14 @@ export async function PATCH(request: NextRequest) {
 
     // Randevu onaylandığında e-posta gönder
     if (status === 'confirmed' && appointment.customerEmail) {
-      await sendAppointmentConfirmationEmail({
+      sendAppointmentConfirmationEmail({
         customerName: appointment.customerName || appointment.user?.name || 'Değerli Müşterimiz',
         customerEmail: appointment.customerEmail,
         date: appointment.date,
         time: appointment.time,
         serviceName: appointment.service?.name || 'Hizmet',
         staffName: appointment.staff?.name || 'Uzman',
-      });
+      }).catch(err => console.error('Onay e-postası gönderme hatası:', err));
     }
 
     return NextResponse.json(appointment);

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getAdminSessionFromRequest } from '@/lib/adminAuth';
+import { strictApiRateLimit } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -90,6 +92,22 @@ export async function GET() {
 // Ayarları güncelle veya oluştur
 export async function POST(request: NextRequest) {
   try {
+    const session = getAdminSessionFromRequest(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 });
+    }
+
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+               request.headers.get('x-real-ip') ||
+               'unknown';
+    const rateLimitResult = await strictApiRateLimit.check(`settings:${ip}`);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Çok fazla istek gönderildi. Lütfen biraz sonra tekrar deneyin.' },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     
     // Boş obje kontrolü
@@ -124,6 +142,11 @@ export async function POST(request: NextRequest) {
 // Tek bir ayarı sil
 export async function DELETE(request: NextRequest) {
   try {
+    const session = getAdminSessionFromRequest(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 });
+    }
+
     const { key } = await request.json();
     
     await (prisma as any).siteSettings.delete({

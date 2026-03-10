@@ -9,11 +9,31 @@ export default function AdminWelcome() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check authentication
-    const isAuth = localStorage.getItem('adminAuth');
-    if (!isAuth) {
-      router.push('/admin/login');
-    }
+    let active = true;
+
+    const checkSession = async () => {
+      try {
+        const response = await fetch('/api/auth/admin/session', {
+          method: 'GET',
+          credentials: 'include',
+          cache: 'no-store',
+        });
+
+        if (!response.ok && active) {
+          router.replace('/admin/login');
+        }
+      } catch {
+        if (active) {
+          router.replace('/admin/login');
+        }
+      }
+    };
+
+    checkSession();
+
+    return () => {
+      active = false;
+    };
   }, [router]);
 
   return (
