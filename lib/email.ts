@@ -125,7 +125,7 @@ export async function sendAppointmentConfirmationEmail(data: AppointmentEmailDat
           <p>Herhangi bir değişiklik veya iptal için bizimle iletişime geçebilirsiniz.</p>
 
           <div class="contact">
-            <p>📞 <a href="tel:03121234567">0312 123 45 67</a></p>
+            <p>📞 <a href="tel:05411361273">0541 136 1273</a></p>
             <p>📧 <a href="mailto:info@demirguzelllik.com">info@demirguzelllik.com</a></p>
           </div>
 
@@ -294,7 +294,7 @@ export async function sendAppointmentReceivedEmail(data: AppointmentEmailData) {
           <p>Herhangi bir sorunuz varsa bizimle iletişime geçebilirsiniz.</p>
 
           <div class="contact">
-            <p>📞 <a href="tel:03121234567">0312 123 45 67</a></p>
+            <p>📞 <a href="tel:05411361273">0541 136 1273</a></p>
             <p>📧 <a href="mailto:info@demirguzelllik.com">info@demirguzelllik.com</a></p>
           </div>
 
