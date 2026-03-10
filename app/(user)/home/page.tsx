@@ -349,7 +349,7 @@ export default function UserHomePage() {
           >
             <FaTimes size={32} />
           </button>
-          <div className="relative w-full max-w-4xl h-[80vh]">
+          <div className="relative w-full max-w-4xl h-[80vh]" onClick={(e) => e.stopPropagation()}>
             <Image
               src={selectedImage}
               alt="Büyük Görünüm"

@@ -194,8 +194,8 @@ export default function Customers() {
 
       {/* Customer Detail Modal */}
       {selectedCustomer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-fadeIn">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedCustomer(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-fadeIn" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-800">Müşteri Detayı</h2>
               <button
