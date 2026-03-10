@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAdminAuth } from '../useAdminAuth';
 import { FaUserPlus, FaStar, FaCalendarCheck, FaMoneyBillWave, FaPhone, FaEnvelope, FaSync, FaTimes, FaTrash, FaEdit } from 'react-icons/fa';
 import { formatPhoneInput, onlyDigits } from '@/lib/validation';
@@ -24,7 +24,11 @@ type StaffMember = {
   avgRating: number;
 };
 
-const CATEGORIES = [
+type ServiceCategoryItem = {
+  category?: string;
+};
+
+const DEFAULT_CATEGORIES = [
   'Saç Bakımı',
   'Sakal & Bıyık',
   'Cilt Bakımı',
@@ -34,9 +38,19 @@ const CATEGORIES = [
   'Makyaj',
 ];
 
+const parseCategoriesValue = (categories: string) => {
+  try {
+    const parsed = JSON.parse(categories);
+    return Array.isArray(parsed) ? parsed : categories.split(',').map(c => c.trim());
+  } catch {
+    return categories.split(',').map(c => c.trim());
+  }
+};
+
 export default function Staff() {
   useAdminAuth();
   const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [serviceCategories, setServiceCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   const [showNewStaff, setShowNewStaff] = useState(false);
@@ -57,10 +71,26 @@ export default function Staff() {
 
   const fetchStaff = async () => {
     try {
-      const res = await fetch('/api/staff', { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
+      const [staffRes, servicesRes] = await Promise.all([
+        fetch('/api/staff', { cache: 'no-store' }),
+        fetch('/api/services', { cache: 'no-store' }),
+      ]);
+
+      if (staffRes.ok) {
+        const data = await staffRes.json();
         setStaff(data);
+      }
+
+      if (servicesRes.ok) {
+        const servicesData: ServiceCategoryItem[] = await servicesRes.json();
+        const categories = Array.from(
+          new Set(
+            servicesData
+              .map((service) => service.category?.trim())
+              .filter((category): category is string => Boolean(category))
+          )
+        );
+        setServiceCategories(categories);
       }
     } catch (error) {
       console.error('Personel yüklenemedi:', error);
@@ -229,6 +259,26 @@ export default function Staff() {
     }));
   };
 
+  const allCategories = useMemo(() => {
+    const categorySet = new Set<string>(DEFAULT_CATEGORIES);
+
+    serviceCategories.forEach((category) => {
+      if (category?.trim()) categorySet.add(category.trim());
+    });
+
+    staff.forEach((member) => {
+      parseCategoriesValue(member.categories).forEach((category) => {
+        if (category?.trim()) categorySet.add(category.trim());
+      });
+    });
+
+    formData.categories.forEach((category) => {
+      if (category?.trim()) categorySet.add(category.trim());
+    });
+
+    return Array.from(categorySet).sort((a, b) => a.localeCompare(b, 'tr'));
+  }, [serviceCategories, staff, formData.categories]);
+
   const totalRevenue = staff.reduce((sum, s) => sum + (s.revenue || 0), 0);
   const totalAppointments = staff.reduce((sum, s) => sum + (s.totalAppointments || 0), 0);
   const avgRating = staff.length > 0 
@@ -244,15 +294,6 @@ export default function Staff() {
 
   const getStatusColor = (isActive: boolean) => {
     return isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
-  };
-
-  const parseCategories = (categories: string) => {
-    try {
-      const parsed = JSON.parse(categories);
-      return Array.isArray(parsed) ? parsed : categories.split(',').map(c => c.trim());
-    } catch {
-      return categories.split(',').map(c => c.trim());
-    }
   };
 
   return (
@@ -358,7 +399,7 @@ export default function Staff() {
             </div>
 
             <div className="flex flex-wrap gap-2 mb-4">
-              {parseCategories(member.categories).map((cat, i) => (
+              {parseCategoriesValue(member.categories).map((cat, i) => (
                 <span key={i} className="px-2 py-1 bg-[#C5A059]/20 text-[#C5A059] rounded-full text-xs">
                   {cat.trim()}
                 </span>
@@ -448,7 +489,7 @@ export default function Staff() {
             <div className="mb-6">
               <p className="text-sm font-semibold text-gray-700 mb-2">Kategoriler:</p>
               <div className="flex flex-wrap gap-2">
-                {parseCategories(selectedStaff.categories).map((cat, i) => (
+                {parseCategoriesValue(selectedStaff.categories).map((cat, i) => (
                   <span key={i} className="px-3 py-1 bg-[#C5A059]/20 text-[#C5A059] rounded-full text-sm">
                     {cat.trim()}
                   </span>
@@ -567,7 +608,7 @@ export default function Staff() {
                     <span className="text-[#C5A059] ml-1 text-xs">({formData.categories.length} seçili)</span>
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {CATEGORIES.map((cat) => (
+                    {allCategories.map((cat) => (
                       <button
                         key={cat}
                         type="button"
