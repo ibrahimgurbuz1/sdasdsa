@@ -449,15 +449,26 @@ export default function BookingPage() {
                   {/* Tarih Seçimi */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-300 mb-2">Tarih</label>
-                    <input
-                      type="date"
-                      value={bookingData.date}
-                      onChange={(e) => handleDateChange(e.target.value)}
-                      min={new Date().toISOString().split('T')[0]}
-                      required
-                      disabled={!bookingData.staff}
-                      className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none disabled:bg-gray-100 disabled:cursor-not-allowed text-black placeholder-gray-400"
-                    />
+                    <div 
+                      onClick={(e) => {
+                        const input = e.currentTarget.querySelector('input[type="date"]') as HTMLInputElement;
+                        if (input && !input.disabled) {
+                          input.focus();
+                          input.showPicker?.();
+                        }
+                      }}
+                      className={`${!bookingData.staff ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      <input
+                        type="date"
+                        value={bookingData.date}
+                        onChange={(e) => handleDateChange(e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
+                        required
+                        disabled={!bookingData.staff}
+                        className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none disabled:bg-gray-100 disabled:cursor-not-allowed text-black placeholder-gray-400 cursor-pointer"
+                      />
+                    </div>
                     {!bookingData.staff && (
                       <p className="text-sm text-gray-400 mt-2">Önce bir uzman seçin</p>
                     )}
