@@ -12,6 +12,11 @@ type StaffMember = {
   phone: string;
   specialty: string;
   categories: string;
+  workdayStart?: string;
+  workdayEnd?: string;
+  weekendStart?: string;
+  weekendEnd?: string;
+  workingDays?: string;
   isActive: boolean;
   avatar?: string;
   totalAppointments: number;
@@ -42,6 +47,11 @@ export default function Staff() {
     phone: '',
     specialty: '',
     categories: [] as string[],
+    workdayStart: '09:00',
+    workdayEnd: '19:00',
+    weekendStart: '10:00',
+    weekendEnd: '18:00',
+    workingDays: [1, 2, 3, 4, 5],
     isActive: true,
   });
 
@@ -72,6 +82,11 @@ export default function Staff() {
       phone: '',
       specialty: '',
       categories: [],
+      workdayStart: '09:00',
+      workdayEnd: '19:00',
+      weekendStart: '10:00',
+      weekendEnd: '18:00',
+      workingDays: [1, 2, 3, 4, 5],
       isActive: true,
     });
   };
@@ -116,6 +131,11 @@ export default function Staff() {
         phone: formData.phone.trim(),
         specialty: formData.specialty.trim(),
         categories: JSON.stringify(formData.categories),
+        workdayStart: formData.workdayStart,
+        workdayEnd: formData.workdayEnd,
+        weekendStart: formData.weekendStart,
+        weekendEnd: formData.weekendEnd,
+        workingDays: JSON.stringify(formData.workingDays),
         isActive: formData.isActive,
       };
 
@@ -153,12 +173,25 @@ export default function Staff() {
     } catch {
       cats = member.categories.split(',').map(c => c.trim());
     }
+    let workingDays: number[] = [1, 2, 3, 4, 5];
+    try {
+      if (member.workingDays) {
+        workingDays = JSON.parse(member.workingDays);
+      }
+    } catch {
+      workingDays = [1, 2, 3, 4, 5];
+    }
     setFormData({
       name: member.name,
       email: member.email,
       phone: member.phone,
       specialty: member.specialty,
       categories: cats,
+      workdayStart: member.workdayStart || '09:00',
+      workdayEnd: member.workdayEnd || '19:00',
+      weekendStart: member.weekendStart || '10:00',
+      weekendEnd: member.weekendEnd || '18:00',
+      workingDays: workingDays,
       isActive: member.isActive,
     });
     setEditingStaff(member);
@@ -552,6 +585,87 @@ export default function Staff() {
                   {formData.categories.length === 0 && (
                     <p className="text-sm text-red-500 mt-1">En az bir kategori seçin</p>
                   )}
+                </div>
+                
+                {/* Çalışma Saatleri */}
+                <div className="md:col-span-2 mt-4">
+                  <h3 className="text-lg font-bold text-gray-800 mb-3">Çalışma Saatleri</h3>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Hafta İçi Başlangıç</label>
+                  <input
+                    type="time"
+                    value={formData.workdayStart}
+                    onChange={(e) => setFormData({ ...formData, workdayStart: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none bg-white text-black"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Hafta İçi Bitiş</label>
+                  <input
+                    type="time"
+                    value={formData.workdayEnd}
+                    onChange={(e) => setFormData({ ...formData, workdayEnd: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none bg-white text-black"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Hafta Sonu Başlangıç</label>
+                  <input
+                    type="time"
+                    value={formData.weekendStart}
+                    onChange={(e) => setFormData({ ...formData, weekendStart: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none bg-white text-black"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Hafta Sonu Bitiş</label>
+                  <input
+                    type="time"
+                    value={formData.weekendEnd}
+                    onChange={(e) => setFormData({ ...formData, weekendEnd: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none bg-white text-black"
+                  />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Çalışma Günleri
+                    <span className="text-[#C5A059] ml-1 text-xs">({formData.workingDays.length} gün seçili)</span>
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: 1, label: 'Pazartesi' },
+                      { value: 2, label: 'Salı' },
+                      { value: 3, label: 'Çarşamba' },
+                      { value: 4, label: 'Perşembe' },
+                      { value: 5, label: 'Cuma' },
+                      { value: 6, label: 'Cumartesi' },
+                      { value: 0, label: 'Pazar' },
+                    ].map((day) => (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => {
+                          const days = formData.workingDays.includes(day.value)
+                            ? formData.workingDays.filter(d => d !== day.value)
+                            : [...formData.workingDays, day.value];
+                          setFormData({ ...formData, workingDays: days });
+                        }}
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 border-2 ${
+                          formData.workingDays.includes(day.value)
+                            ? 'bg-[#C5A059] text-black border-[#C5A059]'
+                            : 'bg-white text-gray-600 border-gray-300 hover:border-[#C5A059]'
+                        }`}
+                      >
+                        {day.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
               <div className="flex gap-3 pt-4">

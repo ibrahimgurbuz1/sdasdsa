@@ -36,6 +36,11 @@ model Staff {
   specialty    String
   avatar       String?
   categories   String
+  workdayStart String        @default("09:00")
+  workdayEnd   String        @default("19:00")
+  weekendStart String        @default("10:00")
+  weekendEnd   String        @default("18:00")
+  workingDays  String        @default("[1,2,3,4,5]")
   isActive     Boolean       @default(true)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt

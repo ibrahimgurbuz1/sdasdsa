@@ -17,6 +17,11 @@ export async function GET() {
         phone: true,
         specialty: true,
         categories: true,
+        workdayStart: true,
+        workdayEnd: true,
+        weekendStart: true,
+        weekendEnd: true,
+        workingDays: true,
         avatar: true,
         isActive: true,
         _count: {
@@ -42,6 +47,11 @@ export async function GET() {
         phone: member.phone,
         specialty: member.specialty,
         categories: member.categories,
+        workdayStart: member.workdayStart,
+        workdayEnd: member.workdayEnd,
+        weekendStart: member.weekendStart,
+        weekendEnd: member.weekendEnd,
+        workingDays: member.workingDays,
         avatar: member.avatar,
         isActive: member.isActive,
         totalAppointments,
@@ -66,7 +76,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, email, phone, specialty, categories, avatar, isActive } = body;
+    const { name, email, phone, specialty, categories, workdayStart, workdayEnd, weekendStart, weekendEnd, workingDays, avatar, isActive } = body;
 
     if (!name || !email || !phone || !specialty || !categories) {
       return NextResponse.json(
@@ -91,6 +101,11 @@ export async function POST(request: NextRequest) {
         phone,
         specialty,
         categories: typeof categories === 'object' ? JSON.stringify(categories) : categories,
+        workdayStart: workdayStart || '09:00',
+        workdayEnd: workdayEnd || '19:00',
+        weekendStart: weekendStart || '10:00',
+        weekendEnd: weekendEnd || '18:00',
+        workingDays: workingDays ? (typeof workingDays === 'object' ? JSON.stringify(workingDays) : workingDays) : '[1,2,3,4,5]',
         avatar: avatar || null,
         isActive: isActive !== undefined ? isActive : true,
       },
@@ -109,7 +124,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, name, email, phone, specialty, categories, avatar, isActive } = body;
+    const { id, name, email, phone, specialty, categories, workdayStart, workdayEnd, weekendStart, weekendEnd, workingDays, avatar, isActive } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -151,6 +166,11 @@ export async function PUT(request: NextRequest) {
         phone: phone.trim(),
         specialty: specialty.trim(),
         categories: typeof categories === 'object' ? JSON.stringify(categories) : categories,
+        workdayStart: workdayStart || '09:00',
+        workdayEnd: workdayEnd || '19:00',
+        weekendStart: weekendStart || '10:00',
+        weekendEnd: weekendEnd || '18:00',
+        workingDays: workingDays ? (typeof workingDays === 'object' ? JSON.stringify(workingDays) : workingDays) : '[1,2,3,4,5]',
         avatar: avatar || null,
         isActive: isActive !== undefined ? isActive : true,
       },

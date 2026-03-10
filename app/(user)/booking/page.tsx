@@ -19,6 +19,11 @@ interface Staff {
   specialty: string;
   avatar?: string;
   categories: string;
+  workdayStart?: string;
+  workdayEnd?: string;
+  weekendStart?: string;
+  weekendEnd?: string;
+  workingDays?: string;
 }
 
 interface SiteSettings {
@@ -141,14 +146,32 @@ export default function BookingPage() {
 
     const selectedService = services.find(s => s.id === bookingData.service);
     const selectedDuration = parseDurationMinutes(selectedService?.duration);
+    const selectedStaffMember = staff.find(s => s.id === bookingData.staff);
 
+    // Seçilen personelin çalışma saatlerini kullan
     const weekend = isWeekendDate(bookingData.date);
     const startTime = weekend
-      ? (siteSettings.weekendStart || '10:00')
-      : (siteSettings.workdayStart || '09:00');
+      ? (selectedStaffMember?.weekendStart || siteSettings.weekendStart || '10:00')
+      : (selectedStaffMember?.workdayStart || siteSettings.workdayStart || '09:00');
     const endTime = weekend
-      ? (siteSettings.weekendEnd || '18:00')
-      : (siteSettings.workdayEnd || '19:00');
+      ? (selectedStaffMember?.weekendEnd || siteSettings.weekendEnd || '18:00')
+      : (selectedStaffMember?.workdayEnd || siteSettings.workdayEnd || '19:00');
+
+    // Personelin çalışma günlerini kontrol et
+    if (selectedStaffMember?.workingDays) {
+      try {
+        const workingDays = JSON.parse(selectedStaffMember.workingDays);
+        const selectedDate = new Date(`${bookingData.date}T00:00:00`);
+        const dayOfWeek = selectedDate.getDay(); // 0 = Pazar, 1 = Pazartesi, ..., 6 = Cumartesi
+        
+        if (!workingDays.includes(dayOfWeek)) {
+          // Personel bu günü çalışmıyor
+          return [];
+        }
+      } catch (e) {
+        console.error('Çalışma günleri parse hatası:', e);
+      }
+    }
 
     const startMinutes = timeToMinutes(startTime);
     const endMinutes = timeToMinutes(endTime);
@@ -186,7 +209,7 @@ export default function BookingPage() {
     }
 
     return slots;
-  }, [bookingData.staff, bookingData.date, bookingData.service, existingAppointments, services, siteSettings]);
+  }, [bookingData.staff, bookingData.date, bookingData.service, existingAppointments, services, staff, siteSettings]);
 
   useEffect(() => {
     if (bookingData.time && !availableTimes.includes(bookingData.time)) {
