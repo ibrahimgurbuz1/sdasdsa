@@ -213,6 +213,7 @@ export default function ConfirmedAppointments() {
                           </div>
                           <div>
                             <div className="font-medium text-gray-900">{appointment.customerName}</div>
+                            <div className="text-xs text-gray-500">{appointment.customerEmail}</div>
                             <div className="text-xs text-gray-500">{appointment.customerPhone}</div>
                           </div>
                         </div>
@@ -310,6 +311,7 @@ export default function ConfirmedAppointments() {
                           </div>
                           <div>
                             <div className="font-medium text-gray-900">{appointment.customerName}</div>
+                            <div className="text-xs text-gray-500">{appointment.customerEmail}</div>
                             <div className="text-xs text-gray-500">{appointment.customerPhone}</div>
                           </div>
                         </div>
