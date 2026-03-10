@@ -40,7 +40,7 @@ const defaultSettings = {
   heroVideoUrl: '/videos/hero-video.mp4',
   
   // Footer
-  footerText: '© 2024 Demir Güzellik Merkezi. Tüm hakları saklıdır.',
+  footerText: '© 2026 Demir Güzellik Merkezi. Tüm hakları saklıdır.',
   
   // SEO
   metaTitle: 'Demir Güzellik Merkezi | Ankara Güzellik Salonu',

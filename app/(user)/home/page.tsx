@@ -3,11 +3,24 @@
 import Link from 'next/link';
 import { FaCalendarAlt, FaCut, FaPaintBrush, FaHandSparkles, FaSpa, FaStar, FaCheck, FaArrowRight, FaTimes, FaUserTie, FaShieldAlt, FaGem, FaTag, FaLaptop, FaHeart } from 'react-icons/fa';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSiteSettings } from '@/lib/SiteSettingsContext';
 
 export default function UserHomePage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedImage) return;
+
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSelectedImage(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [selectedImage]);
   const { settings } = useSiteSettings();
 
   const services = [
@@ -349,7 +362,7 @@ export default function UserHomePage() {
           >
             <FaTimes size={32} />
           </button>
-          <div className="relative w-full max-w-4xl h-[80vh]">
+          <div className="relative w-full max-w-4xl h-[80vh]" onClick={(e) => e.stopPropagation()}>
             <Image
               src={selectedImage}
               alt="Büyük Görünüm"

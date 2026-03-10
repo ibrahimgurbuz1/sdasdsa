@@ -57,7 +57,7 @@ const defaultSettings: SiteSettings = {
   heroTitle: 'Güzelliğiniz',
   heroTitleHighlight: 'Bizim İşimiz',
   heroVideoUrl: '/videos/hero-video.mp4',
-  footerText: '© 2024 Demir Güzellik Merkezi. Tüm hakları saklıdır.',
+  footerText: '© 2026 Demir Güzellik Merkezi. Tüm hakları saklıdır.',
   metaTitle: 'Demir Güzellik Merkezi | Ankara Güzellik Salonu',
   metaDescription: 'Ankara\'nın en iyi güzellik merkezi. Saç, cilt bakımı, makyaj, tırnak bakımı ve daha fazlası.',
   metaKeywords: 'güzellik salonu, kuaför, cilt bakımı, makyaj, ankara',

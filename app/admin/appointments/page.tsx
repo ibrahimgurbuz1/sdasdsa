@@ -185,7 +185,7 @@ export default function Appointments() {
             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Müşteri veya hizmet ara..."
+              placeholder="Müşteri, email veya hizmet ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none bg-white text-black"
@@ -247,6 +247,7 @@ export default function Appointments() {
                         <div>
                           <div className="font-medium text-gray-900">{appointment.customerName}</div>
                           <div className="text-xs text-gray-500">{appointment.customerPhone}</div>
+                          <div className="text-xs text-gray-500 truncate max-w-[220px]">{appointment.customerEmail}</div>
                         </div>
                       </div>
                     </td>
@@ -307,8 +308,8 @@ export default function Appointments() {
 
       {/* New Appointment Modal */}
       {showNewAppointment && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 animate-fadeIn">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowNewAppointment(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 animate-fadeIn" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-800">Yeni Randevu</h2>
               <button

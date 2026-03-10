@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { FaCalendarAlt, FaClock, FaUser, FaPhone, FaEnvelope, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 import { formatPhoneInput, onlyDigits } from '@/lib/validation';
 
@@ -58,6 +58,7 @@ const rangesOverlap = (aStart: number, aEnd: number, bStart: number, bEnd: numbe
 };
 
 export default function BookingPage() {
+  const dateInputRef = useRef<HTMLInputElement | null>(null);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [services, setServices] = useState<Service[]>([]);
@@ -115,7 +116,14 @@ export default function BookingPage() {
       };
 
       fetchAppointments();
+
+      // İptal/red sonrası saatlerin hızlıca boşa düşmesi için periyodik yenile.
+      const interval = setInterval(fetchAppointments, 5000);
+      return () => clearInterval(interval);
     }
+
+    setExistingAppointments([]);
+    return;
   }, [bookingData.staff, bookingData.date]);
 
   // Seçilen hizmete göre uygun uzmanları filtrele
@@ -259,6 +267,24 @@ export default function BookingPage() {
   // Tarih seçiminde saati sıfırla
   const handleDateChange = (date: string) => {
     setBookingData({ ...bookingData, date: date, time: '' });
+  };
+
+  const formatDateDisplay = (date: string) => {
+    if (!date) return 'gg.aa.yyyy';
+    const [year, month, day] = date.split('-');
+    if (!year || !month || !day) return 'gg.aa.yyyy';
+    return `${day}.${month}.${year}`;
+  };
+
+  const openDatePicker = () => {
+    if (!bookingData.staff || !dateInputRef.current) return;
+    const input = dateInputRef.current as HTMLInputElement & { showPicker?: () => void };
+    input.focus();
+    if (typeof input.showPicker === 'function') {
+      input.showPicker();
+      return;
+    }
+    input.click();
   };
 
   return (
@@ -426,15 +452,29 @@ export default function BookingPage() {
                   {/* Tarih Seçimi */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-300 mb-2">Tarih</label>
-                    <input
-                      type="date"
-                      value={bookingData.date}
-                      onChange={(e) => handleDateChange(e.target.value)}
-                      min={new Date().toISOString().split('T')[0]}
-                      required
-                      disabled={!bookingData.staff}
-                      className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none disabled:bg-gray-100 disabled:cursor-not-allowed text-black placeholder-gray-400"
-                    />
+                    <label
+                      className={`relative flex items-center justify-between w-full px-4 py-3 border-2 rounded-xl transition-all ${
+                        bookingData.staff
+                          ? 'bg-white border-gray-300 cursor-pointer hover:border-[#C5A059] focus-within:ring-2 focus-within:ring-[#C5A059] focus-within:border-[#C5A059]'
+                          : 'bg-gray-100 border-gray-300 cursor-not-allowed'
+                      }`}
+                      onClick={openDatePicker}
+                    >
+                      <span className={bookingData.date ? 'text-black font-medium' : 'text-gray-500'}>
+                        {formatDateDisplay(bookingData.date)}
+                      </span>
+                      <FaCalendarAlt className={bookingData.staff ? 'text-[#C5A059]' : 'text-gray-400'} />
+                      <input
+                        ref={dateInputRef}
+                        type="date"
+                        value={bookingData.date}
+                        onChange={(e) => handleDateChange(e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
+                        required
+                        disabled={!bookingData.staff}
+                        className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                      />
+                    </label>
                     {!bookingData.staff && (
                       <p className="text-sm text-gray-400 mt-2">Önce bir uzman seçin</p>
                     )}

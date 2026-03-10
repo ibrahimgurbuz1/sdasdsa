@@ -19,7 +19,7 @@ type StaffMember = {
   avgRating: number;
 };
 
-const CATEGORIES = [
+const DEFAULT_CATEGORIES = [
   'Saç Bakımı',
   'Sakal & Bıyık',
   'Cilt Bakımı',
@@ -32,6 +32,7 @@ const CATEGORIES = [
 export default function Staff() {
   useAdminAuth();
   const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(DEFAULT_CATEGORIES);
   const [loading, setLoading] = useState(true);
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   const [showNewStaff, setShowNewStaff] = useState(false);
@@ -59,11 +60,50 @@ export default function Staff() {
     }
   };
 
+  const fetchServiceCategories = async () => {
+    try {
+      const res = await fetch('/api/services', { cache: 'no-store' });
+      if (!res.ok) return;
+
+      const data = await res.json();
+      const categories = [
+        ...new Set(
+          (Array.isArray(data) ? data : [])
+            .map((service: { category?: string }) => service?.category)
+            .filter((category): category is string => Boolean(category))
+        ),
+      ];
+
+      if (categories.length > 0) {
+        setCategoryOptions((prev) => [...new Set([...prev, ...categories])]);
+      }
+    } catch (error) {
+      console.error('Kategori yüklenemedi:', error);
+    }
+  };
+
   useEffect(() => {
+    const storedCategories = localStorage.getItem('serviceCategories');
+    if (storedCategories) {
+      try {
+        const parsed = JSON.parse(storedCategories);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setCategoryOptions(parsed);
+        }
+      } catch {
+        // ignore malformed localStorage value
+      }
+    }
+
     fetchStaff();
+    fetchServiceCategories();
     const interval = setInterval(fetchStaff, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('serviceCategories', JSON.stringify(categoryOptions));
+  }, [categoryOptions]);
 
   const resetForm = () => {
     setFormData({
@@ -161,6 +201,9 @@ export default function Staff() {
       categories: cats,
       isActive: member.isActive,
     });
+    if (cats.length > 0) {
+      setCategoryOptions((prev) => [...new Set([...prev, ...cats])]);
+    }
     setEditingStaff(member);
     setShowNewStaff(true);
   };
@@ -357,8 +400,8 @@ export default function Staff() {
 
       {/* Staff Detail Modal */}
       {selectedStaff && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-fadeIn max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedStaff(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-fadeIn max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-800">Personel Detayı</h2>
               <button
@@ -452,8 +495,12 @@ export default function Staff() {
 
       {/* New / Edit Staff Modal */}
       {showNewStaff && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 animate-fadeIn max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => {
+          setShowNewStaff(false);
+          setEditingStaff(null);
+          resetForm();
+        }}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 animate-fadeIn max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-800">
                 {editingStaff ? 'Personel Düzenle' : 'Yeni Personel Ekle'}
@@ -534,7 +581,7 @@ export default function Staff() {
                     <span className="text-[#C5A059] ml-1 text-xs">({formData.categories.length} seçili)</span>
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {CATEGORIES.map((cat) => (
+                    {categoryOptions.map((cat) => (
                       <button
                         key={cat}
                         type="button"

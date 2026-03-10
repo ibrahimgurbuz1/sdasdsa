@@ -33,6 +33,19 @@ export default function GalleryPage() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (!selectedMedia) return;
+
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSelectedMedia(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [selectedMedia]);
+
   return (
     <div>
       {/* Hero Section */}
