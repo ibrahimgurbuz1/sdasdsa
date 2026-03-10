@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
         staffId,
         date,
         status: {
-          not: 'cancelled',
+          notIn: ['cancelled', 'rejected'],
         },
       },
       include: {
