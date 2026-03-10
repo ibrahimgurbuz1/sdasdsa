@@ -12,6 +12,12 @@ export async function GET(request: NextRequest) {
     const staffId = searchParams.get('staffId');
     const date = searchParams.get('date');
     const email = searchParams.get('email');
+    const pageParam = Number(searchParams.get('page') || '1');
+    const pageSizeParam = Number(searchParams.get('pageSize') || '20');
+    const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+    const pageSize = Number.isFinite(pageSizeParam) && pageSizeParam > 0
+      ? Math.min(pageSizeParam, 100)
+      : 20;
     const session = getAdminSessionFromRequest(request);
 
     // Public access: only availability lookup for booking flow.
@@ -51,6 +57,43 @@ export async function GET(request: NextRequest) {
     if (staffId) where.staffId = staffId;
     if (date) where.date = date;
     if (email) where.customerEmail = sanitizeEmail(email);
+
+    if (searchParams.has('page') || searchParams.has('pageSize')) {
+      const [appointments, total] = await Promise.all([
+        prisma.appointment.findMany({
+          where,
+          include: {
+            staff: true,
+            service: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+              },
+            },
+          },
+          orderBy: [
+            { date: 'asc' },
+            { time: 'asc' },
+          ],
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+        prisma.appointment.count({ where }),
+      ]);
+
+      return NextResponse.json({
+        items: appointments,
+        pagination: {
+          page,
+          pageSize,
+          total,
+          totalPages: Math.max(1, Math.ceil(total / pageSize)),
+        },
+      });
+    }
 
     const appointments = await prisma.appointment.findMany({
       where,
